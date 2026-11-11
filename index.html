@@ -121,7 +121,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
   <section id="sent" class="panel" hidden>
     <h2>Работа сдана ✓</h2>
-    <p class="lead"><span id="sentName"></span>, ваши ответы отправлены учителю. Результат сообщит учитель.</p>
+    <p class="lead">Спасибо, проверю позже.</p>
     <div class="row"><button id="closeBtn">Закрыть</button></div>
   </section>
 
@@ -262,13 +262,16 @@ $('#list').addEventListener('click',ev=>{
 const BOT_LINK='https://t.me/math9_proverka_bot';
 const TGA=(window.Telegram&&window.Telegram.WebApp)||null;
 const INIT=TGA?TGA.initData:'';
+let TITLE='';
 function startTest(){ saveDraft(); buildTest(); show('test'); }
 function showErr(m){const e=$('#startErr');e.textContent=m;e.hidden=!m;}
 function plural(n){return n%10===1&&n%100!==11?'задание':(n%10>=2&&n%10<=4&&(n%100<10||n%100>20)?'задания':'заданий');}
 async function boot(){
   show('start');
   if(TGA){try{TGA.ready();TGA.expand();}catch(e){}}
-  const code=String((TGA&&TGA.initDataUnsafe&&TGA.initDataUnsafe.start_param)||'').replace(/^t-/,'');
+  const sp=String((TGA&&TGA.initDataUnsafe&&TGA.initDataUnsafe.start_param)||'').replace(/^t-/,'');
+  const us=sp.indexOf('_'), code=us<0?sp:sp.slice(0,us);
+  if(us>=0){try{let b=sp.slice(us+1).replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';TITLE=b64d(b).trim().slice(0,60);}catch(e){TITLE='';}}
   if(!INIT){
     $('#startTitle').textContent='Откройте тест в Telegram';
     $('#startLead').textContent='Этот тест работает только внутри Telegram. Откройте ссылку, которую прислал учитель, в приложении Telegram.';
@@ -301,7 +304,7 @@ async function boot(){
   T=BANK.map((_,i)=>i);CODE=code;NAME=j.name;
   const d=loadDraft();
   A=T.map((_,k)=>(d&&d.a&&d.a[k])||'');
-  $('#startTitle').textContent=NAME;
+  $('#startTitle').textContent=TITLE?'Тест по '+TITLE:'Проверочная работа';
   $('#startLead').textContent='В работе '+T.length+' '+plural(T.length)+'.'+(lsGet('sent-'+CODE)?' Вы уже сдавали эту работу; если сдадите ещё раз, учитель это увидит.':'');
   $('#startRow').hidden=false;$('#startNote').hidden=false;
 }
@@ -334,7 +337,7 @@ async function submitWork(){
   btn.disabled=true;btn.textContent='Отправляю…';
   let ok=false;
   try{
-    const j=await post({act:'submit',init:INIT,t:CODE,a:A});
+    const j=await post({act:'submit',init:INIT,t:CODE,a:A,title:TITLE});
     if(j&&j.ok&&j.id){
       let imgs=[];
       try{imgs=await Promise.race([renderImages(j.marks||[]),new Promise(r=>setTimeout(()=>r([]),20000))]);}catch(e){imgs=[];}
@@ -345,7 +348,7 @@ async function submitWork(){
     }
   }catch(e){ok=false;}
   btn.disabled=false;btn.textContent='Сдать работу';
-  if(ok){lsSet('sent-'+CODE,'1');$('#sentName').textContent=NAME;show('sent');}
+  if(ok){lsSet('sent-'+CODE,'1');show('sent');}
   else showFallback();
 }
 /* Картинка работы для учителя: условия, ответы ученика, отметки. Ученику не показывается. */
@@ -385,7 +388,7 @@ async function renderImages(marks){
         taskBody(BANK[i])+'<div class="ans"><b>Ответ:</b> '+(a?esc(a):'—')+'</div></div>';
     });
     const dots='<div class="dots">'+marks.map((m,j)=>'<span class="dot '+(m||'empty')+'">'+(j+1)+'</span>').join('')+'</div>';
-    const top0='<div class="top"><div class="nm">'+esc(NAME)+'</div>'+dots+'<div class="score">'+ok+' из '+T.length+'</div></div>';
+    const top0='<div class="top"><div class="nm">'+esc(NAME)+(TITLE?'<div class="cont">Тест по '+esc(TITLE)+'</div>':'')+'</div>'+dots+'<div class="score">'+ok+' из '+T.length+'</div></div>';
     const topN='<div class="top"><div class="nm">'+esc(NAME)+' <span class="cont">· продолжение</span></div><div class="score">'+ok+' из '+T.length+'</div></div>';
     // высота каждой карточки в ширину колонки
     host.innerHTML='<style>'+IMG_CSS+'</style><div class="sheet"><div class="cols"><div class="col" id="pcol"></div></div></div>';
