@@ -1,0 +1,901 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.who{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg)}
+.who label.chk{font-size:15px}
+.boot{padding:40px 0;text-align:center;color:var(--muted)}
+html.tg-fs .top{padding-top:calc(28px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+html.tg-fs .tabs{top:calc(var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+html.tg-fs main{padding-bottom:calc(56px + var(--tg-safe-area-inset-bottom,0px))}
+#ownPrev{max-width:100%;max-height:260px;border-radius:8px;border:1px solid var(--line)}
+</style></head><body>
+<title>Конструктор учителя</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: тетрадный лист — клетчатая шапка, ниже карточки заданий на спокойном фоне */
+:root{
+  --bg:#f1f3f8;--surface:#ffffff;--ink:#141c2b;--muted:#586377;--line:#d7dce6;
+  --accent:#1f4fd8;--accent-ink:#ffffff;--accent-soft:#e5ebfc;--grid:#dbe2f2;
+  --good:#17784a;--good-soft:#e1f3e9;--bad:#b3261e;--bad-soft:#fae7e5;--warn:#85570a;--warn-soft:#fcefd0;
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e131b;--surface:#161d28;--ink:#e5eaf2;--muted:#9aa5b8;--line:#2a3443;
+  --accent:#7fa3ff;--accent-ink:#0b1220;--accent-soft:#1c2740;--grid:#1d2736;
+  --good:#58c58b;--good-soft:#163425;--bad:#ff8a80;--bad-soft:#3a1d1b;--warn:#e9b84f;--warn-soft:#3a2d10;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e131b;--surface:#161d28;--ink:#e5eaf2;--muted:#9aa5b8;--line:#2a3443;
+  --accent:#7fa3ff;--accent-ink:#0b1220;--accent-soft:#1c2740;--grid:#1d2736;
+  --good:#58c58b;--good-soft:#163425;--bad:#ff8a80;--bad-soft:#3a1d1b;--warn:#e9b84f;--warn-soft:#3a2d10;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);padding-block:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto}
+.top{margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:28px max(16px,env(safe-area-inset-left,0px)) 22px;
+  background-color:var(--surface);border-bottom:1px solid var(--line);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px;background-position:-1px -1px}
+.top .wrap{display:flex;flex-direction:column;gap:6px}
+.eyebrow{margin:0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{margin:0;font-size:clamp(24px,6vw,32px);line-height:1.15;letter-spacing:-.01em;text-wrap:balance;font-weight:700}
+h2{margin:0;font-size:19px;line-height:1.25;text-wrap:balance}
+p{margin:0}
+.lead{color:var(--muted);max-width:60ch}
+main{padding-block:20px 56px;display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.col{display:flex;flex-direction:column;gap:6px;min-width:0}
+label{font-size:14px;color:var(--muted);font-weight:500}
+label.chk{display:flex;gap:10px;align-items:flex-start;color:var(--ink);font-size:15px;font-weight:400}
+label.chk input{margin-top:4px;accent-color:var(--accent);width:18px;height:18px;flex:none}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);
+  border-radius:8px;padding:10px 12px;min-height:44px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:96px}
+input[type=number]{width:110px}
+select{width:auto;max-width:100%}
+.mono{font-family:var(--mono);font-size:14px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font:inherit;cursor:pointer;border-radius:8px;min-height:44px;padding:8px 16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:500}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.primary:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:transparent}
+button.small{min-height:34px;padding:4px 12px;font-size:14px}
+.muted{color:var(--muted);font-size:14px}
+.note{font-size:14px;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px}
+.err{font-size:14px;background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px}
+
+/* задание */
+.task{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.task-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.no{display:inline-grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+.task.done .no{background:var(--accent);color:var(--accent-ink)}
+.src{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.q{font-size:17px;line-height:1.6;overflow-wrap:anywhere}
+.q math,.opts math,td math{font-size:1.1em}
+.figs{display:flex;flex-direction:column;gap:8px;align-items:flex-start;overflow-x:auto}
+.figs img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px}
+.opts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--bg);font-weight:600}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-width:48px;font-size:17px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ins{display:flex;gap:6px;flex-wrap:wrap}
+.ins button{min-width:40px;min-height:36px;padding:2px 10px;font-size:17px;font-family:var(--mono)}
+.hint{font-size:13px;color:var(--muted)}
+.tag{font-size:12px;border-radius:999px;padding:2px 9px;background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.tag.m{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);
+  margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:0 max(16px,env(safe-area-inset-left,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto}
+.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;padding:12px 14px;min-height:48px;white-space:nowrap;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;align-self:flex-start;max-width:100%}
+.seg button{border:0;border-radius:0;background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px 16px}
+.topics label.chk{font-size:14px}
+.topics .n{color:var(--muted);font-variant-numeric:tabular-nums}
+.pv{display:flex;flex-direction:column;gap:14px;counter-reset:pv}
+.pv .task-head{justify-content:flex-start}
+.pv .acts{margin-left:auto;display:flex;gap:6px}
+.keyline{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;background:var(--good-soft);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:15px}
+.keyline b{color:var(--good);font-family:var(--mono);font-size:15px;overflow-wrap:anywhere}
+.keyline.manual{background:var(--warn-soft)}
+.keyline.manual b{color:var(--warn);font-family:var(--font);font-weight:500}
+.share{display:grid;gap:12px}
+.share .fld{display:flex;gap:8px;align-items:stretch}
+.share .fld input{flex:1}
+.sum{width:100%;border-collapse:collapse}
+.sum td,.sum th{padding:10px 12px}
+.sum .pct{font-variant-numeric:tabular-nums;font-weight:600}
+details.res{border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+details.res>summary{display:flex;gap:12px;align-items:center;padding:12px 16px;cursor:pointer;min-height:48px;flex-wrap:wrap;list-style:revert}
+details.res>summary .nm{font-weight:600;flex:1;min-width:140px}
+details.res>summary .sc{font-variant-numeric:tabular-nums;font-weight:600}
+.dt{overflow-x:auto;padding:0 12px 12px}
+.dt table{width:100%;font-size:14px}
+.dt td{vertical-align:middle}
+.dt .ans{font-family:var(--mono);overflow-wrap:anywhere;max-width:260px}
+.mk{min-height:32px;min-width:84px;padding:2px 10px;font-size:13px;font-weight:600}
+.mk.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.mk.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.mk.manual{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.mk.empty{color:var(--muted)}
+.bar2{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;min-width:80px;border:1px solid var(--line)}
+.bar2 i{display:block;height:100%;background:var(--accent)}
+.kfilters{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.kedit{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.kedit input{flex:1;min-width:160px}
+</style>
+
+<header class="top"><div class="wrap">
+  <p class="eyebrow">Для учителя · не пересылайте эту страницу ученикам</p>
+  <h1>Конструктор</h1>
+  <p class="lead">Составьте тест из сборника или своё задание и отправьте ученикам — они получат его в Telegram.</p>
+</div></header>
+
+<div class="tabs" role="tablist"><div class="wrap">
+  <button role="tab" id="tb-make" aria-selected="true" data-p="make">Составить</button>
+  <button role="tab" id="tb-check" aria-selected="false" data-p="check">Проверить</button>
+  <button role="tab" id="tb-own" aria-selected="false" data-p="own">Своё задание</button>
+  <button role="tab" id="tb-key" aria-selected="false" data-p="key">Ключ</button>
+</div></div>
+
+<main class="wrap">
+ <section id="p-make" class="col" style="gap:16px">
+  <div class="panel">
+    <h2>Что включить в работу</h2>
+    <div class="seg" id="modeSeg">
+      <button data-mode="var" aria-pressed="true">Вариант целиком</button>
+      <button data-mode="top" aria-pressed="false">Микс по темам</button>
+    </div>
+    <div id="varBox" class="col">
+      <label for="varSel">Вариант</label>
+      <select id="varSel"></select>
+    </div>
+    <div id="topBox" class="col" hidden style="gap:12px">
+      <div class="row">
+        <div class="col"><label for="cnt">Число заданий</label><input id="cnt" type="number" min="1" max="40" value="10"></div>
+        <label class="chk"><input type="checkbox" id="rr" checked><span>Брать поровну из каждой выбранной темы</span></label>
+      </div>
+      <div class="row"><span class="muted">Темы:</span><button class="small" id="allT">Выбрать все</button><button class="small" id="noneT">Снять все</button></div>
+      <div class="topics" id="topicList"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="incM"><span>Включать задания с ручной проверкой (построения, доказательства, графики). Сайт их не проверяет, оценку ставите вы.</span></label>
+    <div class="row"><button class="primary" id="build">Составить тест</button>
+      <div class="row" style="margin-left:auto"><input id="addId" type="text" class="mono" style="width:110px" placeholder="13.9" aria-label="Номер задания: вариант.номер"><button id="addBtn">Добавить задание</button></div></div>
+    <div id="makeMsg" class="note" hidden></div>
+  </div>
+
+  <div class="panel share" id="sharePanel">
+    <h2>Отправить ученикам</h2>
+    <div class="col"><label for="titleIn">Тема теста — ученик увидит «Тест по …»</label><input id="titleIn" type="text" maxlength="60" placeholder="например: квадратным уравнениям"></div>
+    <div class="col"><label>Кому отправить</label><div class="who" id="toList"></div></div>
+    <div class="row"><button class="primary" id="sendBtn">Отправить выбранным</button><span class="muted" id="sendMsg"></span></div>
+    <div class="col" id="linkBox"><label for="linkOut">Или общая ссылка — можно переслать в чат класса</label><div class="fld"><input id="linkOut" type="text" class="mono" readonly><button id="copyLink">Копировать</button></div></div>
+    <div class="col" hidden><label for="codeOut">Код работы</label><div class="fld"><input id="codeOut" type="text" class="mono" readonly><button id="copyCode">Копировать</button></div></div>
+    <p class="muted">Отправьте ссылку ученикам в Telegram. Тест откроется только у тех, кому вы дали доступ в боте. Результат с картинкой придёт вам в Telegram.</p>
+  </div>
+
+  <div class="row" style="justify-content:space-between"><h2 id="pvTitle">Состав работы</h2><span class="muted" id="pvCount"></span></div>
+  <div class="pv" id="preview"></div>
+ </section>
+
+ <section id="p-check" class="col" style="gap:16px" hidden>
+  <div class="panel">
+    <h2>Коды ответов учеников</h2>
+    <p class="muted">Вставьте коды, по одному на строку. Они начинаются с OTV1.</p>
+    <textarea id="codesIn" class="mono" placeholder="OTV1.eyJuIjoi…"></textarea>
+    <div class="row"><button class="primary" id="gradeBtn">Проверить</button><span class="muted" id="gradeMsg"></span></div>
+  </div>
+  <div id="results" class="col" style="gap:16px"></div>
+ </section>
+
+ <section id="p-own" class="col" style="gap:16px" hidden>
+  <div class="panel">
+    <h2>Своё задание</h2>
+    <div class="col"><label for="ownText">Текст задания</label><textarea id="ownText" placeholder="Например: Решите уравнение 2x − 4 = 0"></textarea></div>
+    <div class="col"><label for="ownFile">Фото (необязательно)</label><input type="file" id="ownFile" accept="image/*"><img id="ownPrev" hidden alt="Фото к заданию"><button class="small" id="ownNoPhoto" hidden>Убрать фото</button></div>
+    <div class="col"><label for="ownAns">Правильный ответ</label><input id="ownAns" type="text" class="mono" autocomplete="off" placeholder="-2  ·  3/4  ·  2√3  ·  (3; 1)  ·  -1; 4"><p class="hint">Если подходят разные записи — через |, например: 0,5 | 1/2</p></div>
+    <div class="col"><label>Кому отправить</label><div class="who" id="ownWho"></div></div>
+    <div class="row"><button class="primary" id="ownSend">Отправить</button><span class="muted" id="ownMsg"></span></div>
+    <p class="muted">Ученик получит задание сообщением от бота и ответит прямо в чат. Вам придёт ✅ или ❌, итоги — командой /tasks.</p>
+  </div>
+ </section>
+ <section id="p-key" class="col" style="gap:16px" hidden>
+  <div class="panel">
+    <h2>Ключ ответов</h2>
+    <p class="muted">Ключ составлен Claude и проверен расчётами. Просмотрите задания, которые будете давать. Любой ответ можно исправить — правка сохраняется у вас в Google и сразу действует при проверке работ.</p>
+    <div class="kfilters">
+      <div class="col"><label for="kVar">Вариант</label><select id="kVar"></select></div>
+      <div class="col"><label for="kTopic">Тема</label><select id="kTopic"></select></div>
+      <label class="chk"><input type="checkbox" id="kMan"><span>Только ручная проверка</span></label>
+    </div>
+  </div>
+  <div class="pv" id="keyList"></div>
+  <div class="row"><button id="kMore" hidden>Показать ещё</button></div>
+ </section>
+</main>
+
+<script type="text/plain" id="mainjs">  /* запускается после загрузки данных (см. ниже) */
+const STUDENT_URL="https://mikolamatan.github.io/m9-56tj2s6p/";
+const TG_APP_LINK="https://t.me/math9_proverka_bot/test";
+const SUBMIT_URL="https://script.google.com/macros/s/AKfycbwSGrPHiBoqbpRn6U8U0BYakNPGsiOFNQw2SU7lk91fwJyETwQikLxbIaSJleu1i0CD/exec";
+/* Проверка ответов. Работает в браузере и в node. */
+(function(root){
+'use strict';
+function norm(s){
+  return String(s==null?'':s).replace(/[−‒–—]/g,'-').replace(/[   ]/g,' ')
+    .replace(/×|·|⋅/g,'*').replace(/÷|:/g,'/').replace(/π/g,'pi').replace(/√/g,'sqrt').replace(/∞/g,'inf');
+}
+// ---- арифметический разбор ----
+function tokenize(s){
+  const t=[];let i=0;
+  while(i<s.length){
+    const ch=s[i];
+    if(/\s/.test(ch)){i++;continue;}
+    if(/[0-9.]/.test(ch)){let j=i;while(j<s.length&&/[0-9.]/.test(s[j]))j++;t.push({k:'n',v:parseFloat(s.slice(i,j))});i=j;continue;}
+    if(/[a-zA-Zа-яА-Я]/.test(ch)){let j=i;while(j<s.length&&/[a-zA-Zа-яА-Я]/.test(s[j]))j++;
+      let w=s.slice(i,j);
+      // sqrt / pi / inf в слитной записи: sqrt5, 2sqrt3, pi
+      t.push({k:'w',v:w});i=j;continue;}
+    if('+-*/^()'.includes(ch)){t.push({k:'o',v:ch});i++;continue;}
+    throw new Error('bad char '+ch);
+  }
+  return t;
+}
+function evalExpr(str,vars){
+  vars=vars||{};
+  let toks=tokenize(norm(str).replace(/,/g,'.'));
+  // разделение слитных слов: sqrt, pi, переменные по одной букве
+  const out=[];
+  for(const tk of toks){
+    if(tk.k==='w'){
+      let w=tk.v.toLowerCase();let k=0;
+      while(k<w.length){
+        if(w.startsWith('sqrt',k)){out.push({k:'f',v:'sqrt'});k+=4;}
+        else if(w.startsWith('pi',k)){out.push({k:'c',v:Math.PI});k+=2;}
+        else if(w.startsWith('inf',k)){out.push({k:'c',v:Infinity});k+=3;}
+        else {const c=tk.v[k];out.push({k:'v',v:c});k++;}
+      }
+    } else out.push(tk);
+  }
+  // неявное умножение
+  const tz=[];
+  for(let i=0;i<out.length;i++){
+    const a=out[i-1],b=out[i];
+    if(a){
+      const aEnd=(a.k==='n'||a.k==='c'||a.k==='v'||(a.k==='o'&&a.v===')'));
+      const bStart=(b.k==='n'||b.k==='c'||b.k==='v'||b.k==='f'||(b.k==='o'&&b.v==='('));
+      if(aEnd&&bStart) tz.push({k:'o',v:'*'});
+    }
+    tz.push(b);
+  }
+  let p=0;
+  const peek=()=>tz[p];
+  function parseE(){let v=parseT();while(peek()&&peek().k==='o'&&(peek().v==='+'||peek().v==='-')){const o=tz[p++].v;const r=parseT();v=o==='+'?v+r:v-r;}return v;}
+  function parseT(){let v=parseU();while(peek()&&peek().k==='o'&&(peek().v==='*'||peek().v==='/')){const o=tz[p++].v;const r=parseU();v=o==='*'?v*r:v/r;}return v;}
+  function parseU(){ if(peek()&&peek().k==='o'&&peek().v==='-'){p++;return -parseU();} if(peek()&&peek().k==='o'&&peek().v==='+'){p++;return parseU();} return parseP(); }
+  function parseP(){const b=parseA();if(peek()&&peek().k==='o'&&peek().v==='^'){p++;const e=parseU();return Math.pow(b,e);}return b;}
+  function parseA(){
+    const t=tz[p++]; if(!t) throw new Error('eof');
+    if(t.k==='n')return t.v;
+    if(t.k==='c')return t.v;
+    if(t.k==='v'){ if(!(t.v in vars)) throw new Error('var '+t.v); return vars[t.v]; }
+    if(t.k==='f'){ // sqrt: аргумент — следующий атом (с учётом степени/скобок)
+      const a=parseSqrtArg();return Math.sqrt(a); }
+    if(t.k==='o'&&t.v==='('){const v=parseE();const c=tz[p++];if(!c||c.v!==')')throw new Error('paren');return v;}
+    throw new Error('unexpected');
+  }
+  function parseSqrtArg(){
+    // sqrt(...) или sqrt5, sqrt(x)^2 не поддерживается — берём один атом без степени
+    const t=tz[p];
+    if(t&&t.k==='o'&&t.v==='('){p++;const v=parseE();const c=tz[p++];if(!c||c.v!==')')throw new Error('paren');return v;}
+    if(t&&t.k==='n'){p++;return t.v;}
+    if(t&&t.k==='v'){p++;if(!(t.v in vars))throw new Error('var');return vars[t.v];}
+    throw new Error('sqrt arg');
+  }
+  const v=parseE();
+  if(p!==tz.length) throw new Error('trailing');
+  return v;
+}
+function tryEval(s,vars){try{const v=evalExpr(s,vars);return (typeof v==='number')?v:NaN;}catch(e){return NaN;}}
+function closeEnough(a,b,exact){
+  if(!isFinite(a)||!isFinite(b)) return a===b;
+  const d=Math.abs(a-b), m=Math.max(1,Math.abs(b));
+  if(exact) return d<=1e-7*m;
+  return d<=5e-3*Math.abs(b)||d<=1e-9;
+}
+function isTerminating(v){ if(!isFinite(v))return false; const x=Math.abs(v)*1e6; return Math.abs(x-Math.round(x))<1e-6; }
+// ---- утилиты ----
+function numList(s){
+  let t=norm(s).replace(/и/g,';').replace(/,\s+/g,';').replace(/;/g,' ; ');
+  t=t.replace(/(?<=[0-9a-z)])\s+(?=-?[0-9(])/gi,' ; ').replace(/\s+/g,' ').trim();
+  return t.split(/\s*;\s*/).filter(x=>x.length);
+}
+function splitTop(s,sep){ // разбить по sep на нулевой глубине
+  const r=[];let d=0,cur='';
+  for(const ch of s){
+    if(ch==='('||ch==='[')d++; if(ch===')'||ch===']')d--;
+    if(ch===sep&&d===0){r.push(cur);cur='';}else cur+=ch;
+  }
+  r.push(cur);return r;
+}
+function groups(s){ // группы верхнего уровня в круглых скобках
+  const g=[];let d=0,st=-1;
+  for(let i=0;i<s.length;i++){
+    if(s[i]==='('){if(d===0)st=i;d++;}
+    else if(s[i]===')'){d--;if(d===0&&st>=0){g.push(s.slice(st+1,i));st=-1;}}
+  }
+  return g;
+}
+function sameTuple(a,b){ if(a.length!==b.length)return false; for(let i=0;i<a.length;i++){ if(!closeEnough(a[i],b[i],true))return false;} return true; }
+// канонический вид промежутков
+function canonNum(s){
+  let t=norm(s).replace(/\s/g,'').replace(/,/g,'.');
+  let sign=1; let pos=false;
+  if(/^\+?inf$/.test(t)) return 'inf';
+  if(/^-inf$/.test(t)) return '-inf';
+  const v=tryEval(t);
+  if(isNaN(v)) return null;
+  return String(Math.round(v*1e7)/1e7);
+}
+function canonSet(s){
+  let t=norm(s).toLowerCase().replace(/\s/g,'');
+  t=t.replace(/бесконечность/g,'inf').replace(/объединение|или/g,'∪');
+  // неравенства вида x>=3 , x<5
+  const ineq=t.match(/^[a-zа-я]?(>=|<=|≥|≤|>|<)(.+)$/);
+  if(ineq && !/[;∪]/.test(t)){
+    const op=ineq[1], num=ineq[2].replace(/,/g,'.');
+    if(op==='>=') t='['+num+';+inf)'; else if(op==='≥') t='['+num+';+inf)'; else if(op==='>') t='('+num+';+inf)';
+    else if(op==='<=') t='(-inf;'+num+']'; else if(op==='≤') t='(-inf;'+num+']'; else t='(-inf;'+num+')';
+  }
+  t=t.replace(/∪|u(?![a-z])|и|v(?![a-z])/g,'∪');
+  // составные: разбить по ∪ на нулевой глубине
+  const parts=splitTop(t,'∪').filter(x=>x.length);
+  const res=[];
+  for(let p of parts){
+    p=p.replace(/^\{(.*)\}$/,'$1');
+    let m=p.match(/^([\(\[])(.+?);(.+?)([\)\]])$/);
+    if(m){
+      let a=canonNum(m[2].replace(/,/g,'.')),b=canonNum(m[3].replace(/,/g,'.'));
+      if(a==null||b==null)return null;
+      let o=m[1],c=m[4];
+      if(a==='-inf')o='(';
+      if(b==='inf')c=')';
+      res.push(o+a+';'+b+c);
+    } else {
+      const parts2=p.split(/;/); // одиночные точки через ;
+      for(const q of parts2){
+        const n=canonNum(q); if(n==null)return null; res.push('{'+n+'}');
+      }
+    }
+  }
+  return res.sort().join('∪');
+}
+function randPts(vars, k, kind){
+  const pts=[];
+  const ranges=[[1.3,4.7],[10.2,19.7],[0.6,0.95],[-4.7,-1.3],[5.3,9.4],[20.5,31.3]];
+  let seed=12345;
+  const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+  for(let i=0;i<k;i++){
+    const r=ranges[i%ranges.length];
+    const o={};
+    vars.forEach((v,j)=>{const rr=ranges[(i+j)%ranges.length];o[v]=rr[0]+rnd()*(rr[1]-rr[0]);});
+    pts.push(o);
+  }
+  return pts;
+}
+function varsOf(s){
+  const t=norm(s).toLowerCase().replace(/sqrt|pi|inf/g,'');
+  const m=t.match(/[a-zа-я]/g)||[];
+  return Array.from(new Set(m));
+}
+// ---- основной проверяющий ----
+function grade(type,key,ans){
+  // возвращает {r:'ok'|'bad'|'manual'|'empty', note}
+  if(type==='m') return {r:'manual'};
+  if(ans==null) return {r:'empty'};
+  if(type==='c'){
+    const a=(Array.isArray(ans)?ans.join(''):String(ans)).replace(/[^а-д]/gi,'').toLowerCase().split('').sort().join('');
+    if(!a) return {r:'empty'};
+    return {r:a===key.split('').sort().join('')?'ok':'bad'};
+  }
+  let raw=String(ans).trim();
+  if(!raw) return {r:'empty'};
+  try{
+    switch(type){
+      case 'n':{
+        const alts=key.split('|').map(k=>tryEval(k));
+        // допускаем запись в виде "x=3"
+        let t=raw.replace(/^[a-zа-я]\w*\s*=\s*/i,'');
+        // допускаем единицы: "5 км" — вытащим выражение до первой буквы слова длиной>3, кроме sqrt/pi
+        let v=tryEval(t);
+        if(isNaN(v)){ const m=norm(t).match(/^[-+\d.,\s*\/^()sqrtpi√]+/i); if(m) v=tryEval(m[0]); }
+        if(isNaN(v)) return {r:'bad'};
+        const ok=alts.some(a=>closeEnough(v,a,isTerminating(a)));
+        return {r:ok?'ok':'bad'};
+      }
+      case 'e':{
+        let t=raw.replace(/^[^=]*=/,'');
+        const vs=Array.from(new Set(varsOf(key).concat(varsOf(t))));
+        if(varsOf(t).some(v=>!varsOf(key).includes(v))) return {r:'bad'};
+        const pts=randPts(vs.length?vs:['x'],14);
+        let good=0;
+        for(const pt of pts){
+          const a=tryEval(key,pt),b=tryEval(t,pt);
+          if(!isFinite(a)||isNaN(a)) continue;
+          if(isNaN(b)) return {r:'bad'};
+          good++;
+          if(Math.abs(a-b)>1e-6*Math.max(1,Math.abs(a))) return {r:'bad'};
+        }
+        return {r:good>=3?'ok':'bad'};
+      }
+      case 'l':{
+        const A=numList(raw).map(s=>tryEval(s)); if(A.some(isNaN)) return {r:'bad'};
+        const B=numList(key).map(s=>tryEval(s));
+        const ua=[],ub=[];
+        A.forEach(x=>{if(!ua.some(y=>closeEnough(x,y,true)))ua.push(x);});
+        B.forEach(x=>{if(!ub.some(y=>closeEnough(x,y,true)))ub.push(x);});
+        if(ua.length!==ub.length) return {r:'bad'};
+        return {r:ub.every(x=>ua.some(y=>closeEnough(y,x,true)))?'ok':'bad'};
+      }
+      case 'q':{
+        const A=numList(raw).map(s=>tryEval(s)); if(A.some(isNaN)) return {r:'bad'};
+        const B=numList(key).map(s=>tryEval(s));
+        if(A.length!==B.length) return {r:'bad'};
+        return {r:B.every((x,i)=>closeEnough(A[i],x,isTerminating(x)))?'ok':'bad'};
+      }
+      case 'p':{
+        const parse=(s)=>{
+          s=norm(s);
+          let gs=groups(s);
+          if(!gs.length){ gs=[s]; }
+          return gs.map(g=>splitTop(g,';').map(x=>tryEval(x)));
+        };
+        const A=parse(raw),B=parse(key);
+        if(A.some(t=>t.some(isNaN))) return {r:'bad'};
+        if(A.length!==B.length) return {r:'bad'};
+        const used=new Set();
+        for(const tb of B){
+          const j=A.findIndex((ta,i)=>!used.has(i)&&sameTuple(ta,tb));
+          if(j<0) return {r:'bad'};used.add(j);
+        }
+        return {r:'ok'};
+      }
+      case 'i':{
+        const a=canonSet(raw),b=canonSet(key);
+        return {r:(a&&b&&a===b)?'ok':'bad'};
+      }
+      case 'y':{
+        const t=norm(raw).toLowerCase();
+        let v=null;
+        if(/(^|[^а-я])нет|не\s*(явля|принад|успе|може|быть)|^-$/.test(t)) v='нет';
+        else if(/да|yes|явля|принад|успе|можно|^\+$/.test(t)) v='да';
+        return {r:v===key?'ok':'bad'};
+      }
+      case 's':{
+        const d=raw.replace(/[^0-9]/g,'');
+        return {r:d===key?'ok':'bad'};
+      }
+      case 'g':{
+        const t=norm(raw).toLowerCase();
+        let v=null;
+        if(/отриц|минус|<\s*0|^-/.test(t)) v='-'; else if(/положит|плюс|>\s*0|^\+/.test(t)) v='+';
+        return {r:v===key?'ok':'bad'};
+      }
+      case 'k':{
+        const [val,sg]=key.split(';');
+        const t=norm(raw);
+        const m=t.replace(/,/g,'.').match(/-?\d+(?:\.\d+)?(?:\/\d+)?/g);
+        if(!m) return {r:'bad'};
+        const v=tryEval(m[0]);
+        if(!closeEnough(v,parseFloat(val),true)) return {r:'bad'};
+        let s=null;
+        if(/больше|>/.test(t)) s='>'; else if(/меньше|</.test(t)) s='<'; else if(/равн|=/.test(t)) s='=';
+        if(m.length>=2 && /[<>=]/.test(t)){
+          const v2=tryEval(m[1]);
+          const rel=t.includes('>')?'>':t.includes('<')?'<':'=';
+          const truth=rel==='>'?v>v2:rel==='<'?v<v2:Math.abs(v-v2)<1e-9;
+          // для записи вида «-2,1 > -2,5» значение — первое число; знак верен, если неравенство истинно и совпадает с ключом
+          return {r:(truth&&rel===sg)?'ok':'bad'};
+        }
+        return {r:s===sg?'ok':'bad'};
+      }
+      case 'z':{
+        const [num,yn]=key.split(';');
+        const parts=norm(raw).replace(/,/g,'.').match(/-?\d+(?:\.\d+)?/);
+        if(!parts) return {r:'bad'};
+        if(!closeEnough(parseFloat(parts[0]),parseFloat(num),true)) return {r:'bad'};
+        const t=norm(raw).toLowerCase();
+        let v=null;
+        if(/(^|[^а-я])нет|не\s*успе/.test(t)) v='нет'; else if(/да|успе/.test(t)) v='да';
+        return {r:v===yn?'ok':'bad'};
+      }
+      case 'f':{
+        const i=key.indexOf(';'); const fk=key.slice(0,i),vk=key.slice(i+1);
+        const ra=raw.replace(/\s+и\s+/g,';').replace(/\n/g,';');
+        const j=ra.indexOf(';'); if(j<0) return {r:'bad'};
+        const r1=grade('e',fk,ra.slice(0,j)); const r2=grade('n',vk,ra.slice(j+1));
+        return {r:(r1.r==='ok'&&r2.r==='ok')?'ok':'bad'};
+      }
+      case 'w':{
+        const [dir,num]=key.split(';');
+        const t=norm(raw).toLowerCase();
+        let d=null;
+        if(/увелич|возраст|больше|выросл|повыс/.test(t)) d='увеличилось';
+        else if(/уменьш|сократ|меньше|снизил|упал/.test(t)) d='уменьшилось';
+        const m=t.replace(/,/g,'.').match(/\d+(?:\.\d+)?/);
+        if(!m||d!==dir) return {r:'bad'};
+        return {r:closeEnough(parseFloat(m[0]),parseFloat(num),false)?'ok':'bad'};
+      }
+      case 'r':{
+        const rr=(s)=>{const t=norm(s).replace(/\s/g,'').replace(/,/g,'.').replace(/^1:/,'1/');const m=norm(s).replace(/\s/g,'').replace(/,/g,'.').match(/^(.+?)[:\/](.+)$/);
+          const a=m?tryEval(m[1]):NaN,b=m?tryEval(m[2]):NaN;return a/b;};
+        const a=rr(raw),b=rr(key); return {r:closeEnough(a,b,true)?'ok':'bad'};
+      }
+    }
+  }catch(e){return {r:'bad'};}
+  return {r:'bad'};
+}
+const api={grade,evalExpr,norm,canonSet,numList,groups};
+if(typeof module!=='undefined'&&module.exports) module.exports=api; else root.Grader=api;
+})(typeof window!=='undefined'?window:globalThis);
+
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function taskBody(e){
+  let h='<div class="q">'+e.q+'</div>';
+  if(e.f&&e.f.length) h+='<div class="figs">'+e.f.map(f=>'<img alt="Рисунок к заданию" src="'+FIGS[f]+'">').join('')+'</div>';
+  if(e.tb&&e.tb.length){
+    h+='<div class="tbl"><table><thead><tr>'+e.tb[0].map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+
+      e.tb.slice(1).map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+  }
+  if(e.o&&e.o.length) h+='<ul class="opts">'+e.o.map(o=>'<li>'+o+'</li>').join('')+'</ul>';
+  return h;
+}
+function encCode(idx){return idx.map(i=>i.toString(36).padStart(2,'0')).join('');}
+function decCode(s){
+  if(!/^[0-9a-z]+$/.test(s)||s.length%2) return null;
+  const r=[];
+  for(let i=0;i<s.length;i+=2){const v=parseInt(s.slice(i,i+2),36); if(!(v>=0&&v<BANK.length)) return null; r.push(v);}
+  return r.length?r:null;
+}
+function b64e(s){return btoa(unescape(encodeURIComponent(s)));}
+function b64d(s){return decodeURIComponent(escape(atob(s)));}
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function copyText(text,btn,field){
+  const done=()=>{if(!btn)return;const o=btn.textContent;btn.textContent='Скопировано';setTimeout(()=>{btn.textContent=o;},1500);};
+  const fb=()=>{if(field){field.focus();field.select();try{document.execCommand('copy');done();}catch(e){}}};
+  try{navigator.clipboard.writeText(text).then(done,fb);}catch(e){fb();}
+}
+
+const TYPENAME={c:'выбор варианта',n:'число',e:'выражение',l:'набор чисел',p:'пары чисел',i:'промежуток',y:'да/нет',s:'порядок',q:'числа по порядку',z:'число и да/нет',f:'формула и значение',k:'значение и знак',g:'знак',w:'направление и число',r:'масштаб',m:'проверка вручную'};
+let OV=window.__KOV||{};
+const idOf=i=>BANK[i].v+'.'+BANK[i].n;
+function keyOf(i){const id=idOf(i);const o=OV[id];return o!==undefined?[KEYS0[id][0],o]:KEYS0[id];}
+function isMan(i){return KEYS0[idOf(i)][0]==='m';}
+function pretty(ty,k){
+  if(ty==='c') return k.split('').join(', ');
+  if(ty==='m') return k;
+  const f=s=>s.replace(/sqrt/g,'√').replace(/\bpi\b/g,'π').replace(/\*/g,'·').replace(/(?<![0-9a-zа-я])-/g,'−').replace(/\^2\b/g,'²').replace(/\^3\b/g,'³');
+  if(ty==='n') return k.split('|').map(f).join('  или  ');
+  return f(k).replace(/;/g,'; ');
+}
+const byId={};BANK.forEach((e,i)=>{byId[e.v+'.'+e.n]=i;});
+const VARS=Array.from(new Set(BANK.map(e=>e.v))).sort((a,b)=>a-b);
+const TOPICS=[];BANK.forEach(e=>{if(!TOPICS.includes(e.t))TOPICS.push(e.t);});
+
+/* вкладки */
+$$('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  $$('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+  ['make','check','key','own'].forEach(p=>{$('#p-'+p).hidden=(p!==b.dataset.p);});
+  if(b.dataset.p==='key'&&!$('#keyList').children.length) renderKeys(true);
+}));
+
+/* ---------- составление ---------- */
+let mode='var',SEL=[];
+$('#varSel').innerHTML=VARS.map(v=>'<option value="'+v+'">Вариант '+v+'</option>').join('');
+const topicCount=t=>BANK.filter((e,i)=>e.t===t&&($('#incM').checked||!isMan(i))).length;
+function drawTopics(){
+  const old=new Set($$('#topicList input:checked').map(x=>x.value));const first=!$('#topicList').children.length;
+  $('#topicList').innerHTML=TOPICS.map((t,k)=>'<label class="chk"><input type="checkbox" value="'+k+'"'+((first||old.has(String(k)))?' checked':'')+'><span>'+esc(t)+' <span class="n">· '+topicCount(t)+'</span></span></label>').join('');
+}
+drawTopics();
+$('#incM').addEventListener('change',()=>{drawTopics();});
+$$('#modeSeg button').forEach(b=>b.addEventListener('click',()=>{
+  mode=b.dataset.mode;
+  $$('#modeSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+  $('#varBox').hidden=mode!=='var';$('#topBox').hidden=mode!=='top';
+}));
+$('#allT').addEventListener('click',()=>$$('#topicList input').forEach(x=>x.checked=true));
+$('#noneT').addEventListener('click',()=>$$('#topicList input').forEach(x=>x.checked=false));
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function poolOf(t){return BANK.map((e,i)=>i).filter(i=>BANK[i].t===t&&($('#incM').checked||!isMan(i)));}
+function msg(t){const m=$('#makeMsg');m.textContent=t||'';m.hidden=!t;}
+function compose(){
+  msg('');
+  if(mode==='var'){
+    const v=+$('#varSel').value;
+    SEL=BANK.map((e,i)=>i).filter(i=>BANK[i].v===v&&($('#incM').checked||!isMan(i))).sort((a,b)=>BANK[a].n-BANK[b].n);
+    $('#pvTitle').textContent='Вариант '+v;
+  } else {
+    const tp=$$('#topicList input:checked').map(x=>TOPICS[+x.value]);
+    const n=Math.max(1,Math.min(40,+$('#cnt').value||10));
+    if(!tp.length){SEL=[];msg('Выберите хотя бы одну тему.');render();return;}
+    let res=[];
+    if($('#rr').checked){
+      const pools=tp.map(t=>shuffle(poolOf(t)));
+      while(res.length<n&&pools.some(p=>p.length)){
+        for(const p of shuffle(pools)){ if(res.length>=n)break; if(p.length) res.push(p.pop()); }
+      }
+    } else res=shuffle([].concat(...tp.map(poolOf))).slice(0,n);
+    if(res.length<n) msg('В выбранных темах нашлось только '+res.length+' заданий.');
+    SEL=res;
+    $('#pvTitle').textContent='Микс по темам';
+  }
+  render();
+}
+function render(){
+  const code=SEL.length?encCode(SEL):'';
+  $('#codeOut').value=code?'t-'+code:'';
+  const ttl=($('#titleIn').value||'').trim();
+  const tpart=ttl?'_'+b64e(ttl).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''):'';
+  $('#linkOut').value=code?TG_APP_LINK+'?startapp='+code+tpart:'';
+  $('#sharePanel').style.opacity=code?1:.5;
+  $('#pvCount').textContent=SEL.length?('Заданий: '+SEL.length):'';
+  $('#preview').innerHTML=SEL.length?SEL.map((i,j)=>cardHTML(i,j,true)).join(''):'<div class="panel"><p class="muted">В работе пока нет заданий. Выберите вариант или темы и нажмите «Составить тест».</p></div>';
+}
+function cardHTML(i,j,acts){
+  const e=BANK[i],[ty,k]=keyOf(i),man=ty==='m';
+  return '<article class="task" data-i="'+i+'"><div class="task-head"><span class="no">'+(j==null?e.v+'.'+e.n:j+1)+'</span>'+
+    '<span class="src">вариант '+e.v+', задание '+e.n+'</span><span class="tag'+(man?' m':'')+'">'+esc(man?'проверка вручную':e.t)+'</span>'+
+    (acts?'<span class="acts">'+(mode==='top'?'<button class="small" data-act="swap">Заменить</button>':'')+'<button class="small ghost" data-act="del">Убрать</button></span>':'')+
+    '</div>'+taskBody(e)+
+    '<div class="keyline'+(man?' manual':'')+'"><span>Ответ'+(man?' (образец)':'')+':</span><b>'+esc(pretty(ty,k))+'</b></div></article>';
+}
+$('#preview').addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act]');if(!b)return;
+  const i=+b.closest('.task').dataset.i,pos=SEL.indexOf(i);
+  if(b.dataset.act==='del'){SEL.splice(pos,1);render();}
+  else {
+    const pool=poolOf(BANK[i].t).filter(x=>!SEL.includes(x));
+    if(!pool.length){msg('В этой теме больше нет заданий для замены.');return;}
+    msg('');SEL[pos]=pool[Math.floor(Math.random()*pool.length)];render();
+  }
+});
+$('#build').addEventListener('click',compose);
+$('#titleIn').addEventListener('input',render);
+
+initRecipients();
+$('#addBtn').addEventListener('click',()=>{
+  const v=$('#addId').value.trim().replace(',','.');
+  if(!(v in byId)){msg('Задание «'+v+'» не найдено. Введите номер в виде вариант.номер, например 13.9.');return;}
+  if(SEL.includes(byId[v])){msg('Это задание уже в работе.');return;}
+  msg('');SEL.push(byId[v]);$('#addId').value='';render();
+});
+$('#copyLink').addEventListener('click',()=>copyText($('#linkOut').value,$('#copyLink'),$('#linkOut')));
+$('#copyCode').addEventListener('click',()=>copyText($('#codeOut').value,$('#copyCode'),$('#codeOut')));
+
+/* ---------- проверка ---------- */
+let RES=[];const OPEN=new Set();
+function parseCode(line){
+  const m=line.trim().match(/OTV1\.([A-Za-z0-9+\/=]+)/);if(!m)return null;
+  try{const o=JSON.parse(b64d(m[1]));const idx=decCode(String(o.t||''));if(!idx||!Array.isArray(o.a))return null;
+    return {name:String(o.n||'Без имени'),code:o.t,idx,ans:idx.map((_,j)=>o.a[j]==null?'':String(o.a[j])),raw:line.trim()};}catch(e){return null;}
+}
+function evalRes(r){
+  r.marks=r.idx.map((i,j)=>{const[ty,k]=keyOf(i);return Grader.grade(ty,k,r.ans[j]).r;});
+}
+$('#gradeBtn').addEventListener('click',()=>{
+  const lines=$('#codesIn').value.split(/\s+(?=OTV1\.)|\n+/).map(s=>s.trim()).filter(Boolean);
+  const seen=new Set();RES=[];let bad=0;
+  lines.forEach(l=>{const r=parseCode(l);if(!r){bad++;return;}if(seen.has(r.raw))return;seen.add(r.raw);evalRes(r);RES.push(r);});
+  $('#gradeMsg').textContent=(RES.length?'Прочитано работ: '+RES.length:'')+(bad?(RES.length?'. ':'')+'Не распознано строк: '+bad:'');
+  showResults();
+});
+function counts(r){let ok=0,man=0;r.marks.forEach(m=>{if(m==='ok')ok++;else if(m==='manual')man++;});return{ok,man,n:r.idx.length};}
+function showResults(){
+  const box=$('#results');
+  if(!RES.length){box.innerHTML='';return;}
+  RES.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  let h='<div class="panel"><h2>Итоги</h2><div class="dt" style="padding:0"><table class="sum"><thead><tr><th>Ученик</th><th>Верно</th><th>%</th><th>Ждёт вашей проверки</th></tr></thead><tbody>'+
+    RES.map(r=>{const c=counts(r);return '<tr><td>'+esc(r.name)+'</td><td>'+c.ok+' из '+c.n+'</td><td class="pct">'+Math.round(100*c.ok/c.n)+'%</td><td>'+(c.man?c.man:'—')+'</td></tr>';}).join('')+
+    '</tbody></table></div></div>';
+  const same=RES.every(r=>r.code===RES[0].code);
+  if(same&&RES.length>1){
+    h+='<div class="panel"><h2>По заданиям</h2><div class="dt" style="padding:0"><table><thead><tr><th>№</th><th>Откуда</th><th>Решили верно</th><th></th></tr></thead><tbody>'+
+    RES[0].idx.map((i,j)=>{const ok=RES.filter(r=>r.marks[j]==='ok').length;const p=Math.round(100*ok/RES.length);
+      return '<tr><td>'+(j+1)+'</td><td>'+idOf(i)+'</td><td>'+ok+' из '+RES.length+' ('+p+'%)</td><td style="width:35%"><div class="bar2"><i style="width:'+p+'%"></i></div></td></tr>';}).join('')+'</tbody></table></div></div>';
+  }
+  h+=RES.map((r,ri)=>{
+    const c=counts(r);
+    return '<details class="res" data-ri="'+ri+'"'+(OPEN.has(r.raw)?' open':'')+'><summary><span class="nm">'+esc(r.name)+'</span><span class="sc">'+c.ok+' из '+c.n+'</span>'+(c.man?'<span class="tag m">вручную: '+c.man+'</span>':'')+'</summary><div class="dt"><table><thead><tr><th>№</th><th>Задание</th><th>Ответ ученика</th><th>Верный ответ</th><th>Оценка</th></tr></thead><tbody>'+
+      r.idx.map((i,j)=>{const[ty,k]=keyOf(i);const m=r.marks[j];
+        const lab={ok:'Верно',bad:'Неверно',empty:'Нет ответа',manual:'Проверить'}[m];
+        return '<tr><td>'+(j+1)+'</td><td>'+idOf(i)+'</td><td class="ans">'+(r.ans[j]?esc(r.ans[j]):'—')+'</td><td class="ans">'+esc(pretty(ty,k))+'</td><td><button class="mk '+m+'" data-ri="'+ri+'" data-j="'+j+'">'+lab+'</button></td></tr>';}).join('')+
+      '</tbody></table></div></details>';
+  }).join('');
+  box.innerHTML=h;
+}
+$('#results').addEventListener('click',ev=>{
+  const b=ev.target.closest('.mk');if(!b)return;
+  const r=RES[+b.dataset.ri],j=+b.dataset.j;
+  r.marks[j]=r.marks[j]==='ok'?'bad':'ok';showResults();
+});
+$('#results').addEventListener('toggle',ev=>{
+  const d=ev.target;if(!d.classList||!d.classList.contains('res'))return;
+  const r=RES[+d.dataset.ri];if(!r)return;if(d.open)OPEN.add(r.raw);else OPEN.delete(r.raw);
+},true);
+
+/* ---------- ключ ---------- */
+$('#kVar').innerHTML='<option value="">Все варианты</option>'+VARS.map(v=>'<option value="'+v+'">Вариант '+v+'</option>').join('');
+$('#kTopic').innerHTML='<option value="">Все темы</option>'+TOPICS.map((t,k)=>'<option value="'+k+'">'+esc(t)+'</option>').join('');
+let KL=[],KSHOWN=0;
+function renderKeys(reset){
+  if(reset){
+    const v=$('#kVar').value,t=$('#kTopic').value,man=$('#kMan').checked;
+    KL=BANK.map((e,i)=>i).filter(i=>(!v||BANK[i].v===+v)&&(t===''||BANK[i].t===TOPICS[+t])&&(!man||isMan(i)));
+    KSHOWN=0;$('#keyList').innerHTML='';
+  }
+  const next=KL.slice(KSHOWN,KSHOWN+30);
+  $('#keyList').insertAdjacentHTML('beforeend',next.map(i=>keyCard(i)).join(''));
+  KSHOWN+=next.length;
+  $('#kMore').hidden=KSHOWN>=KL.length;
+  if(!KL.length)$('#keyList').innerHTML='<div class="panel"><p class="muted">Заданий по этому фильтру нет.</p></div>';
+}
+function keyCard(i){
+  const id=idOf(i),ty=KEYS0[id][0],edited=OV[id]!==undefined;
+  return cardHTML(i,null,false).replace('</article>',
+   '<div class="kedit"><span class="muted">Тип ответа: '+TYPENAME[ty]+(edited?' · исправлено вами':'')+'</span>'+
+   '<button class="small" data-edit="'+id+'">Исправить ответ</button></div></article>');
+}
+['kVar','kTopic','kMan'].forEach(id=>$('#'+id).addEventListener('change',()=>renderKeys(true)));
+$('#kMore').addEventListener('click',()=>renderKeys(false));
+$('#keyList').addEventListener('click',ev=>{
+  const b=ev.target.closest('button');if(!b)return;
+  const card=b.closest('.task');const i=+card.dataset.i,id=idOf(i);
+  if(b.dataset.edit){
+    const cur=keyOf(i)[1];
+    b.closest('.kedit').innerHTML='<input type="text" class="mono" id="ke-'+id.replace('.','-')+'" value="'+esc(cur)+'" aria-label="Новый ответ">'+
+      '<button class="small primary" data-save="'+id+'">Сохранить</button>'+(OV[id]!==undefined?'<button class="small" data-reset="'+id+'">Вернуть прежний</button>':'')+
+      '<span class="muted" style="flex-basis:100%">Запись как в ключе: sqrt(5) для √5, * для умножения, | между вариантами ответа. Для выбора варианта — буквы подряд.</span>';
+  } else if(b.dataset.save){
+    const v=$('input',b.closest('.kedit')).value.trim();
+    if(v){saveKeyRemote(id,v,card,i);}
+  } else if(b.dataset.reset){
+    saveKeyRemote(id,null,card,i);
+  }
+});
+
+compose();
+</script>
+<script>
+/* ---------- Конструктор учителя внутри Telegram ----------
+   Страница пустая: задания, рисунки и ключ приходят от программы учителя (Google)
+   только после того, как Telegram подтвердил, что открыл учитель. */
+var BANK = [], FIGS = {}, KEYS0 = {};
+const T_API = "https://script.google.com/macros/s/AKfycbwSGrPHiBoqbpRn6U8U0BYakNPGsiOFNQw2SU7lk91fwJyETwQikLxbIaSJleu1i0CD/exec";
+const TGA = (window.Telegram && window.Telegram.WebApp) || null;
+const INIT = TGA ? TGA.initData : '';
+let STUDENTS = [], ME = '', OWN_PHOTO = '';
+
+async function tpost(o) {
+  const r = await fetch(T_API, { method: 'POST', body: JSON.stringify(Object.assign({ init: INIT }, o)) });
+  return await r.json();
+}
+function q(s) { return document.querySelector(s); }
+function qe(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function bootMsg(t) {
+  let b = document.getElementById('bootBox');
+  if (!b) { b = document.createElement('div'); b.id = 'bootBox'; b.className = 'boot wrap'; q('header.top').after(b); }
+  b.textContent = t || ''; b.hidden = !t;
+}
+function showUI(on) { q('.tabs').hidden = !on; q('main').hidden = !on; }
+
+/* выбор учеников */
+function whoHTML(prefix) {
+  const all = STUDENTS.map(s => ({ id: s.id, name: s.name })).concat([{ id: ME, name: 'Я сам (посмотреть, как видит ученик)' }]);
+  return '<label class="chk"><input type="checkbox" data-all="1"><span><b>Все ученики</b> (' + STUDENTS.length + ')</span></label>' +
+    all.map(s => '<label class="chk"><input type="checkbox" value="' + qe(s.id) + '"' + (s.id === ME ? ' data-me="1"' : '') + '><span>' + qe(s.name) + '</span></label>').join('');
+}
+function bindWho(box) {
+  box.innerHTML = whoHTML();
+  box.addEventListener('change', ev => {
+    const t = ev.target;
+    if (t.dataset.all) box.querySelectorAll('input[value]:not([data-me])').forEach(x => x.checked = t.checked);
+    else box.querySelector('[data-all]').checked = Array.from(box.querySelectorAll('input[value]:not([data-me])')).every(x => x.checked) && STUDENTS.length > 0;
+  });
+}
+function whoSelected(box) { return Array.from(box.querySelectorAll('input[value]:checked')).map(x => x.value); }
+function setMsg(el, t, bad) { el.textContent = t || ''; el.style.color = bad ? 'var(--bad)' : ''; }
+
+/* вызывается из основного скрипта вместо браузерного блока «Кому» */
+function initRecipients() {
+  bindWho(q('#toList'));
+  q('#sendBtn').addEventListener('click', async () => {
+    const uids = whoSelected(q('#toList')), m = q('#sendMsg');
+    if (!SEL.length) { setMsg(m, 'Сначала составьте тест.', true); return; }
+    if (!uids.length) { setMsg(m, 'Отметьте, кому отправить.', true); return; }
+    q('#sendBtn').disabled = true; setMsg(m, 'Отправляю…');
+    let j = null; try { j = await tpost({ act: 'tsend', uids, t: encCode(SEL), title: (q('#titleIn').value || '').trim() }); } catch (e) { j = null; }
+    q('#sendBtn').disabled = false;
+    if (j && j.ok) setMsg(m, '✓ Отправлено: ' + j.sent + (j.fail ? ', не дошло: ' + j.fail : '') + '. Ученики получили кнопку «Открыть тест».');
+    else setMsg(m, 'Не получилось отправить. Проверьте интернет и попробуйте ещё раз.', true);
+  });
+}
+
+/* правка ключа — сохраняется в Google */
+async function saveKeyRemote(id, v, card, i) {
+  let j = null; try { j = await tpost({ act: 'tkey', id, val: v }); } catch (e) { j = null; }
+  if (!j || !j.ok) { alert('Не удалось сохранить ответ. Проверьте интернет.'); return; }
+  if (v == null) delete OV[id]; else OV[id] = v;
+  card.outerHTML = keyCard(i);
+}
+
+/* своё задание */
+function initOwn() {
+  bindWho(q('#ownWho'));
+  q('#ownFile').addEventListener('change', async ev => {
+    const f = ev.target.files && ev.target.files[0]; if (!f) return;
+    const url = URL.createObjectURL(f), img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+    const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+    const d = cv.toDataURL('image/jpeg', 0.85); OWN_PHOTO = d.split(',')[1];
+    q('#ownPrev').src = d; q('#ownPrev').hidden = false; q('#ownNoPhoto').hidden = false; URL.revokeObjectURL(url);
+  });
+  q('#ownNoPhoto').addEventListener('click', () => { OWN_PHOTO = ''; q('#ownFile').value = ''; q('#ownPrev').hidden = true; q('#ownNoPhoto').hidden = true; });
+  q('#ownSend').addEventListener('click', async () => {
+    const text = q('#ownText').value.trim(), ans = q('#ownAns').value.trim(), uids = whoSelected(q('#ownWho')), m = q('#ownMsg');
+    if (!text && !OWN_PHOTO) { setMsg(m, 'Напишите текст задания или добавьте фото.', true); return; }
+    if (!ans) { setMsg(m, 'Укажите правильный ответ.', true); return; }
+    if (!uids.length) { setMsg(m, 'Отметьте, кому отправить.', true); return; }
+    q('#ownSend').disabled = true; setMsg(m, 'Отправляю…');
+    let j = null; try { j = await tpost({ act: 'tcustom', text, ans, photo: OWN_PHOTO, uids }); } catch (e) { j = null; }
+    q('#ownSend').disabled = false;
+    if (j && j.ok) {
+      setMsg(m, '✓ Отправлено: ' + j.sent + '. Ответы будут приходить вам в чат с ботом.');
+      q('#ownText').value = ''; q('#ownAns').value = ''; q('#ownNoPhoto').click();
+    } else setMsg(m, 'Не получилось отправить. Проверьте интернет и попробуйте ещё раз.', true);
+  });
+}
+
+async function tboot() {
+  showUI(false);
+  if (TGA) {
+    try {
+      TGA.ready(); TGA.expand();
+      if (TGA.isVersionAtLeast && TGA.isVersionAtLeast('7.7') && TGA.disableVerticalSwipes) TGA.disableVerticalSwipes();
+      if (TGA.isVersionAtLeast && TGA.isVersionAtLeast('8.0') && TGA.requestFullscreen && !TGA.isFullscreen) { TGA.requestFullscreen(); document.documentElement.classList.add('tg-fs'); }
+    } catch (e) {}
+  }
+  if (!INIT) { bootMsg('Откройте конструктор из Telegram: кнопка «Конструктор» в чате с ботом.'); return; }
+  bootMsg('Загружаю задания…');
+  let j = null; try { j = await tpost({ act: 'tload' }); } catch (e) { j = null; }
+  if (!j || !j.ok) { bootMsg(j && j.err === 'auth' ? 'Конструктор доступен только учителю.' : 'Не удалось загрузить. Проверьте интернет и откройте ещё раз.'); return; }
+  BANK = j.bank; BANK.forEach((e, i) => { e.t = j.topics[i]; });
+  FIGS = j.figs || {}; KEYS0 = j.keys; window.__KOV = j.kov || {};
+  STUDENTS = j.students || []; ME = j.me;
+  const s = document.createElement('script');
+  s.textContent = document.getElementById('mainjs').textContent;
+  document.body.appendChild(s);
+  initOwn();
+  bootMsg(''); showUI(true);
+}
+tboot();
+
+</script>
+
+</body></html>
