@@ -14,7 +14,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
 .wrap{max-width:760px;margin:0 auto;padding:0 16px}
-.top{background:var(--surface);border-bottom:1px solid var(--line);padding:18px 0 14px;position:sticky;top:0;z-index:5}
+.top{background:var(--bg);padding:14px 0 12px;position:sticky;top:0;z-index:5;box-shadow:0 6px 16px -6px rgba(0,0,0,.35)}
 html.tg-fs .top{padding-top:calc(18px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 h1{margin:0;font-size:22px;line-height:1.2;flex:1;min-width:0}
@@ -24,7 +24,7 @@ h1{margin:0;font-size:22px;line-height:1.2;flex:1;min-width:0}
 .dot{min-width:30px;height:30px;border-radius:7px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:0;cursor:pointer;padding:0 6px}
 .ok{background:var(--good-soft);color:var(--good)}.bad{background:var(--bad-soft);color:var(--bad)}.empty{background:var(--line);color:var(--muted)}.manual{background:var(--warn-soft);color:var(--warn)}
 main{padding:14px 0 calc(40px + var(--tg-safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
-.t{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--line);border-radius:10px;padding:12px 14px;scroll-margin-top:150px}
+.t{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--line);border-radius:10px;padding:12px 14px;scroll-margin-top:170px}
 .t.ok{border-left-color:#22a06b}.t.bad{border-left-color:#d93025}.t.manual{border-left-color:#e3a008}
 .th{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .no{font-weight:800;color:var(--accent);font-size:17px}
@@ -45,7 +45,7 @@ math{font-size:1.08em}
 </style>
 <link rel="stylesheet" href="ui.css">
 </head><body>
-<header class="top"><div class="wrap">
+<header class="top sticky"><div class="wrap">
   <div class="row"><h1 id="nm">Загружаю работу…</h1><div class="score" id="sc" hidden></div></div>
   <div class="sub" id="sub"></div>
   <div class="dots" id="dots"></div>

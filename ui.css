@@ -1,6 +1,8 @@
 /* Лёгкое оформление для всех страниц: мягкие карточки без рамок, крупные кнопки, меньше линий. */
 html.ui body{-webkit-font-smoothing:antialiased}
-html.ui .top{background-image:none!important;background-color:transparent!important;border-bottom:0!important}
+html.ui .top{background-image:none!important;background-color:var(--bg)!important;border-bottom:0!important}
+/* «приклеенная» шапка (просмотр работы): плотный фон и тень, чтобы ничего не просвечивало */
+html.ui .top[style*=sticky],html.ui header.top.sticky{box-shadow:0 6px 16px -6px rgba(0,0,0,.35)}
 html.ui .eyebrow{font-size:11px!important;letter-spacing:.12em!important;opacity:.8}
 html.ui h1{font-size:26px!important;letter-spacing:-.02em}
 html.ui h2{font-size:18px!important}
