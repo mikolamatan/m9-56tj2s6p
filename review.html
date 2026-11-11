@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Проверенная работа</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#f1f3f8;--surface:#fff;--ink:#141c2b;--muted:#586377;--line:#d7dce6;--accent:#1f4fd8;--accent-soft:#e5ebfc;
+  --good:#17784a;--good-soft:#e1f3e9;--bad:#b3261e;--bad-soft:#fae7e5;--warn:#85570a;--warn-soft:#fcefd0;color-scheme:light}
+@media (prefers-color-scheme: dark){:root{--bg:#0e131b;--surface:#161d28;--ink:#e5eaf2;--muted:#9aa5b8;--line:#2a3443;--accent:#7fa3ff;--accent-soft:#1c2740;
+  --good:#58c58b;--good-soft:#163425;--bad:#ff8a80;--bad-soft:#3a1d1b;--warn:#e9b84f;--warn-soft:#3a2d10;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding:18px 0 14px;position:sticky;top:0;z-index:5}
+html.tg-fs .top{padding-top:calc(18px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:22px;line-height:1.2;flex:1;min-width:0}
+.sub{color:var(--muted);font-size:14px;margin-top:2px}
+.score{font-size:22px;font-weight:800;color:#fff;background:var(--accent);border-radius:10px;padding:4px 14px;white-space:nowrap}
+.dots{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.dot{min-width:30px;height:30px;border-radius:7px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:0;cursor:pointer;padding:0 6px}
+.ok{background:var(--good-soft);color:var(--good)}.bad{background:var(--bad-soft);color:var(--bad)}.empty{background:var(--line);color:var(--muted)}.manual{background:var(--warn-soft);color:var(--warn)}
+main{padding:14px 0 calc(40px + var(--tg-safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.t{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--line);border-radius:10px;padding:12px 14px;scroll-margin-top:150px}
+.t.ok{border-left-color:#22a06b}.t.bad{border-left-color:#d93025}.t.manual{border-left-color:#e3a008}
+.th{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.no{font-weight:800;color:var(--accent);font-size:17px}
+.mk{font-weight:700;border-radius:5px;padding:1px 9px;font-size:13px}
+.src{margin-left:auto;color:var(--muted);font-size:12px}
+.q{overflow-wrap:anywhere}
+.figs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.figs img{max-width:100%;background:#fff;border-radius:6px;border:1px solid var(--line)}
+.opts{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:2px 20px}
+.tbl{overflow-x:auto}table{border-collapse:collapse;font-size:14px;margin-top:6px}th,td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+.ans{margin-top:10px;display:grid;gap:4px}
+.ans div{padding:6px 10px;border-radius:7px;overflow-wrap:anywhere}
+.ans .me.ok{background:var(--good-soft)}.ans .me.bad{background:var(--bad-soft)}.ans .me.empty{background:var(--bg);color:var(--muted)}.ans .me.manual{background:var(--warn-soft)}
+.ans .key{background:var(--bg)}
+.ans b{font-weight:600}
+.msg{padding:60px 0;text-align:center;color:var(--muted)}
+math{font-size:1.08em}
+</style>
+</head><body>
+<header class="top"><div class="wrap">
+  <div class="row"><h1 id="nm">Загружаю работу…</h1><div class="score" id="sc" hidden></div></div>
+  <div class="sub" id="sub"></div>
+  <div class="dots" id="dots"></div>
+</div></header>
+<main class="wrap" id="list"></main>
+<script>
+const API="https://script.google.com/macros/s/AKfycbwSGrPHiBoqbpRn6U8U0BYakNPGsiOFNQw2SU7lk91fwJyETwQikLxbIaSJleu1i0CD/exec";
+const TGA=(window.Telegram&&window.Telegram.WebApp)||null, INIT=TGA?TGA.initData:'';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LBL={ok:'✓ верно',bad:'✗ неверно',empty:'нет ответа',manual:'проверьте сами'};
+function msg(t){document.getElementById('list').innerHTML='<div class="msg">'+esc(t)+'</div>';document.getElementById('nm').textContent='Проверенная работа';}
+async function boot(){
+  if(TGA){try{TGA.ready();TGA.expand();
+    if(TGA.isVersionAtLeast&&TGA.isVersionAtLeast('8.0')&&TGA.requestFullscreen&&!TGA.isFullscreen){TGA.requestFullscreen();document.documentElement.classList.add('tg-fs');}}catch(e){}}
+  const w=(location.search.match(/[?&]w=([0-9a-f]{12})/)||[])[1];
+  if(!INIT){msg('Откройте работу из Telegram — кнопкой «Открыть работу» в сообщении бота.');return;}
+  if(!w){msg('Работа не указана.');return;}
+  let j=null;
+  try{const r=await fetch(API,{method:'POST',body:JSON.stringify({act:'twork',init:INIT,w})});j=await r.json();}catch(e){j=null;}
+  if(!j||!j.ok){msg(j&&j.err==='auth'?'Работы может смотреть только учитель.':j&&j.err==='gone'?'Эта работа уже удалена (хранятся последние 150).':'Не удалось загрузить. Проверьте интернет.');return;}
+  const ok=j.tasks.filter(t=>t.m==='ok').length,n=j.tasks.length;
+  document.getElementById('nm').textContent=j.name;
+  const sc=document.getElementById('sc');sc.textContent=ok+' из '+n;sc.hidden=false;
+  const d=j.ts?new Date(j.ts):null;
+  document.getElementById('sub').textContent=[j.title?'Тест по '+j.title:'',d?d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'',j.dup>1?'повторная сдача ('+j.dup+'-я)':''].filter(Boolean).join(' · ');
+  document.getElementById('dots').innerHTML=j.tasks.map((t,k)=>'<button class="dot '+t.m+'" data-k="'+k+'">'+(k+1)+'</button>').join('');
+  document.getElementById('list').innerHTML=j.tasks.map((t,k)=>{
+    let h='<article class="t '+t.m+'" id="t'+k+'"><div class="th"><span class="no">'+(k+1)+'.</span><span class="mk '+t.m+'">'+LBL[t.m]+'</span><span class="src">'+esc(t.src)+'</span></div>';
+    h+='<div class="q">'+t.q+'</div>';
+    if(t.f&&t.f.length)h+='<div class="figs">'+t.f.map(f=>'<img alt="Рисунок" src="'+(j.figs[f]||'')+'">').join('')+'</div>';
+    if(t.tb&&t.tb.length)h+='<div class="tbl"><table><thead><tr>'+t.tb[0].map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+t.tb.slice(1).map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+    if(t.o&&t.o.length)h+='<ul class="opts">'+t.o.map(o=>'<li>'+o+'</li>').join('')+'</ul>';
+    h+='<div class="ans"><div class="me '+(t.a?t.m:'empty')+'"><b>Ответ ученика:</b> '+(t.a?esc(t.a):'—')+'</div>';
+    if(t.m!=='ok')h+='<div class="key"><b>'+(t.m==='manual'?'Образец:':'Верно:')+'</b> '+esc(t.key)+'</div>';
+    return h+'</div></article>';
+  }).join('');
+  document.getElementById('dots').addEventListener('click',e=>{const b=e.target.closest('.dot');if(b)document.getElementById('t'+b.dataset.k).scrollIntoView({behavior:'smooth',block:'start'});});
+}
+boot();
+</script>
+</body></html>

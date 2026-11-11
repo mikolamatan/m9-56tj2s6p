@@ -91,6 +91,17 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .prog i{display:block;height:100%;background:var(--accent);width:0}
 .cnt{font-size:14px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
 .list{display:flex;flex-direction:column;gap:14px}
+/* дробная черта: кнопка и предпросмотр ответа */
+.frb{display:inline-flex;flex-direction:column;align-items:center;line-height:1;font-size:13px}
+.frb span+span{border-top:1.5px solid currentColor;padding-top:1px;margin-top:1px;min-width:12px;text-align:center}
+.mpv{margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--accent-soft);font-size:20px;line-height:1.3;overflow-x:auto}
+.mpl{font-size:13px;color:var(--muted);margin-right:6px;vertical-align:middle}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 3px}
+.fr>span{padding:0 3px;line-height:1.25}
+.fr>span+span{border-top:1.5px solid currentColor}
+.sq{white-space:nowrap}.sqa{border-top:1.5px solid currentColor;padding:0 2px}
+.mpv sup{font-size:.65em}
+.owntxt{white-space:pre-wrap;font-size:17px;line-height:1.6}
 /* полноэкранный режим Telegram: не залезать под кнопки «Закрыть» и «…» */
 html.tg-fs .top{padding-top:calc(28px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 html.tg-fs .bar{top:calc(var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
@@ -121,6 +132,20 @@ html.tg-fs main{padding-bottom:calc(56px + var(--tg-safe-area-inset-bottom,0px))
       <p class="muted" id="finNote">Проверьте ответы. После нажатия работа сразу уйдёт учителю.</p>
       <div class="row"><button class="primary" id="finBtn">Сдать работу</button></div>
     </div>
+  </section>
+
+  <section id="own" class="task" hidden>
+    <div class="task-head"><span class="no">✍️</span><span class="src">Задание от учителя</span></div>
+    <div class="owntxt" id="ownText"></div>
+    <img id="ownImg" alt="Фото задания" hidden style="max-width:100%;border-radius:8px;border:1px solid var(--line)">
+    <div class="ans">
+      <input class="ansin" id="ownIn" type="text" aria-label="Ответ" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ваш ответ">
+      <div class="ins" id="ownIns"></div>
+      <div class="mpv" hidden></div>
+    </div>
+    <p class="hint">Дробь — кнопкой с дробной чертой или через /, корень — √, степень — ^. Несколько ответов — через ;</p>
+    <div id="ownErr" class="err" hidden></div>
+    <div class="row"><button class="primary" id="ownBtn">Отправить ответ</button></div>
   </section>
 
   <section id="sent" class="panel" hidden>
@@ -188,7 +213,7 @@ const HINTS={
  r:'Введите масштаб в виде 1:100000.',
  m:'Запишите ответ кратко. Чертёж и подробное решение покажите учителю на листе.'
 };
-const INS={n:'√ π ^ /',e:'√ ^ ( ) /',l:'√ π ; −',p:'( ) ; √ −',i:'( ) [ ] ; ∪ ∞ −',f:'^ √ ; =',q:'; −',k:'< > =',z:';',s:''};
+const INS={n:'a/b √ π ^',e:'a/b √ ^ ( )',t:'a/b √ π ^ ( ) ;',l:'√ π ; −',p:'( ) ; √ −',i:'( ) [ ] ; ∪ ∞ −',f:'^ √ ; =',q:'; −',k:'< > =',z:';',s:''};
 function letters(e){
   const L=(e.o||[]).map(o=>(String(o).match(/^\s*([а-д])\)/)||[])[1]).filter(Boolean);
   return L.length?L:['а','б','в','г','д'];
@@ -205,8 +230,59 @@ function inputHTML(i){
   if(ty==='m') return '<textarea class="ansin" aria-label="Ответ" rows="3"></textarea>';
   let h='<input class="ansin" type="text" aria-label="Ответ" autocomplete="off" autocapitalize="none" spellcheck="false">';
   const ins=(INS[ty]||'').split(' ').filter(Boolean);
-  if(ins.length) h+='<div class="ins">'+ins.map(c=>'<button type="button" data-ins="'+esc(c)+'" tabindex="-1">'+esc(c)+'</button>').join('')+'</div>';
+  if(ins.length) h+='<div class="ins">'+ins.map(c=>'<button type="button" data-ins="'+esc(c)+'" tabindex="-1">'+(c==='a/b'?'<span class="frb"><span>a</span><span>b</span></span>':esc(c))+'</button>').join('')+'</div>';
+  h+='<div class="mpv" hidden></div>';
   return h;
+}
+/* ---------- как ответ прочитает учитель: дроби, корни, степени ---------- */
+function mtoks(s){
+  const t=[];let i=0;
+  while(i<s.length){
+    const c=s[i];
+    if(/[0-9.,]/.test(c)){let j=i;while(j<s.length&&/[0-9.,]/.test(s[j]))j++;t.push({k:'a',s:s.slice(i,j)});i=j;continue;}
+    if(/[a-zA-Zа-яА-ЯёЁπ∞]/.test(c)){let j=i;while(j<s.length&&/[a-zA-Zа-яА-ЯёЁπ∞]/.test(s[j]))j++;t.push({k:'a',s:s.slice(i,j)});i=j;continue;}
+    if('()'.includes(c)||'^/√'.includes(c)){t.push({k:c});i++;continue;}
+    t.push({k:'x',s:c});i++;
+  }
+  return t;
+}
+function mtree(t){
+  let i=0;
+  function level(){const out=[];while(i<t.length){const x=t[i];if(x.k===')'){i++;return out;}if(x.k==='('){i++;out.push({k:'g',c:level()});continue;}out.push(x);i++;}return out;}
+  return level();
+}
+function mcomb(ns){
+  ns=ns.map(n=>n.k==='g'?{k:'g',c:mcomb(n.c)}:n);
+  for(let k=ns.length-2;k>=0;k--)if(ns[k].k==='√'&&ns[k+1]&&ns[k+1].k!=='x'){ns.splice(k,2,{k:'r',c:ns[k+1]});}
+  for(let k=1;k<ns.length-1;k++)if(ns[k].k==='^'){ns.splice(k-1,3,{k:'p',b:ns[k-1],e:ns[k+1]});k--;}
+  for(let k=1;k<ns.length-1;k++)if(ns[k].k==='/'){ns.splice(k-1,3,{k:'f',n:ns[k-1],d:ns[k+1]});k--;}
+  return ns;
+}
+function mh(n,strip){
+  if(Array.isArray(n))return n.map(x=>mh(x)).join('');
+  switch(n.k){
+    case 'a':return esc(n.s);
+    case 'x':return esc(n.s.replace('-','−').replace('*','·'));
+    case 'g':return strip?mh(n.c):'('+mh(n.c)+')';
+    case 'r':return '<span class="sq">√<span class="sqa">'+mh(n.c,true)+'</span></span>';
+    case 'p':return mh(n.b)+'<sup>'+mh(n.e,true)+'</sup>';
+    case 'f':return '<span class="fr"><span>'+mh(n.n,true)+'</span><span>'+mh(n.d,true)+'</span></span>';
+    default:return esc(n.k);
+  }
+}
+function insertAt(inp,ch){
+  const s=inp.selectionStart==null?inp.value.length:inp.selectionStart, e2=inp.selectionEnd==null?s:inp.selectionEnd;
+  let ins=ch, caret;
+  if(ch==='a/b'){ const sel=inp.value.slice(s,e2); ins='('+sel+')/()'; caret=sel?s+ins.length-1:s+1; }
+  else caret=s+ch.length;
+  inp.value=inp.value.slice(0,s)+ins+inp.value.slice(e2);
+  inp.focus(); try{inp.setSelectionRange(caret,caret);}catch(x){}
+}
+function mathPreview(s){try{return mh(mcomb(mtree(mtoks(String(s)))));}catch(e){return esc(s);}}
+function updPreview(box,v){
+  const pv=box&&box.querySelector('.mpv');if(!pv)return;
+  const need=/[\/^√]/.test(v||'');
+  pv.hidden=!need;if(need)pv.innerHTML='<span class="mpl">Учитель увидит:</span> '+mathPreview(v);
 }
 let T=[],A=[],NAME='',CODE='';
 const draftKey=()=>'draft-'+CODE+(typeof AID!=='undefined'&&AID?'-'+AID:'');
@@ -214,7 +290,7 @@ function saveDraft(){lsSet(draftKey(),JSON.stringify({n:NAME,a:A}));}
 function loadDraft(){try{return JSON.parse(lsGet(draftKey())||'null');}catch(e){return null;}}
 const SUBMIT_URL='https://script.google.com/macros/s/AKfycbwSGrPHiBoqbpRn6U8U0BYakNPGsiOFNQw2SU7lk91fwJyETwQikLxbIaSJleu1i0CD/exec';
 const FIN_TEXT='Проверьте ответы. После нажатия работа сразу уйдёт учителю.';
-function show(id){['start','test','done','sent'].forEach(s=>{$('#'+s).hidden=(s!==id);});window.scrollTo(0,0);}
+function show(id){['start','test','done','sent','own'].forEach(s=>{$('#'+s).hidden=(s!==id);});window.scrollTo(0,0);}
 function progress(){
   const n=A.filter(x=>x&&String(x).trim()).length;
   $('#cnt').textContent='Отвечено '+n+' из '+T.length;
@@ -230,7 +306,7 @@ function buildTest(){
   $$('.task').forEach((el,j)=>{
     const v=A[j]||'';
     const inp=$('.ansin',el);
-    if(inp) inp.value=v;
+    if(inp) {inp.value=v;updPreview(el,v);}
     const ex=!!el.querySelector('[data-excl="1"]');
     $$('.chip',el).forEach(b=>{const on=v&&(ex?v===b.dataset.v:v.includes(b.dataset.v));b.setAttribute('aria-pressed',on?'true':'false');});
   });
@@ -238,7 +314,7 @@ function buildTest(){
 }
 $('#list').addEventListener('input',ev=>{
   const el=ev.target.closest('.task'); if(!el||!ev.target.classList.contains('ansin')) return;
-  A[+el.dataset.j]=ev.target.value; saveDraft(); progress();
+  A[+el.dataset.j]=ev.target.value; saveDraft(); progress(); updPreview(el,ev.target.value);
 });
 $('#list').addEventListener('pointerdown',ev=>{if(ev.target.closest('[data-ins]')) ev.preventDefault();});
 $('#list').addEventListener('click',ev=>{
@@ -246,11 +322,8 @@ $('#list').addEventListener('click',ev=>{
   const j=+el.dataset.j;
   const ib=ev.target.closest('[data-ins]');
   if(ib){
-    const inp=$('.ansin',el); const ch=ib.dataset.ins;
-    const s=inp.selectionStart==null?inp.value.length:inp.selectionStart, e2=inp.selectionEnd==null?s:inp.selectionEnd;
-    inp.value=inp.value.slice(0,s)+ch+inp.value.slice(e2);
-    inp.focus(); const p=s+ch.length; try{inp.setSelectionRange(p,p);}catch(x){}
-    A[j]=inp.value; saveDraft(); progress(); return;
+    const inp=$('.ansin',el); insertAt(inp,ib.dataset.ins);
+    A[j]=inp.value; saveDraft(); progress(); updPreview(el,inp.value); return;
   }
   const cb=ev.target.closest('.chip');
   if(cb){
@@ -270,6 +343,36 @@ let TITLE='',AID='';
 function startTest(){ saveDraft(); buildTest(); show('test'); }
 function showErr(m){const e=$('#startErr');e.textContent=m;e.hidden=!m;}
 function plural(n){return n%10===1&&n%100!==11?'задание':(n%10>=2&&n%10<=4&&(n%100<10||n%100>20)?'задания':'заданий');}
+/* ---------- ответ на своё задание учителя ---------- */
+async function ownTask(k){
+  $('#startTitle').textContent='Загружаю задание…';$('#startLead').textContent='';
+  let j=null;try{j=await post({act:'kload',init:INIT,k});}catch(e){j=null;}
+  if(!j||!j.ok){
+    const err=j&&j.err;
+    $('#startTitle').textContent=err==='noaccess'?'Нет доступа':err==='notyours'?'Это не ваше задание':err==='code'?'Задание не найдено':'Не удалось загрузить';
+    $('#startLead').textContent=err==='noaccess'?'Напишите боту /start и свою фамилию и имя, учитель подтвердит доступ.':'Проверьте интернет и откройте задание ещё раз.';
+    if(err==='noaccess')$('#botRow').hidden=false;
+    return;
+  }
+  if(j.done){$('#startTitle').textContent='Вы уже ответили';$('#startLead').textContent='Ответ на это задание уже у учителя.';return;}
+  $('#ownText').textContent=j.text||'';$('#ownText').hidden=!j.text;
+  if(j.photo){$('#ownImg').src=j.photo;$('#ownImg').hidden=false;}
+  $('#ownIns').innerHTML='a/b √ π ^ ( ) ;'.split(' ').map(c=>'<button type="button" data-ins="'+esc(c)+'" tabindex="-1">'+(c==='a/b'?'<span class="frb"><span>a</span><span>b</span></span>':esc(c))+'</button>').join('');
+  const box=$('#own'),inp=$('#ownIn');
+  box.addEventListener('pointerdown',ev=>{if(ev.target.closest('[data-ins]'))ev.preventDefault();});
+  box.addEventListener('click',ev=>{const b=ev.target.closest('[data-ins]');if(b){insertAt(inp,b.dataset.ins);updPreview(box,inp.value);}});
+  inp.addEventListener('input',()=>updPreview(box,inp.value));
+  $('#ownBtn').addEventListener('click',async()=>{
+    const a=inp.value.trim(),er=$('#ownErr');
+    if(!a){er.textContent='Введите ответ.';er.hidden=false;return;}
+    er.hidden=true;$('#ownBtn').disabled=true;$('#ownBtn').textContent='Отправляю…';
+    let r=null;try{r=await post({act:'ksubmit',init:INIT,k,a});}catch(e){r=null;}
+    $('#ownBtn').disabled=false;$('#ownBtn').textContent='Отправить ответ';
+    if(r&&r.ok){show('sent');}
+    else{er.textContent=r&&r.err==='already'?'Вы уже ответили на это задание.':'Не получилось отправить. Проверьте интернет и нажмите ещё раз.';er.hidden=false;}
+  });
+  show('own');
+}
 async function boot(){
   show('start');
   if(TGA){try{
@@ -284,6 +387,8 @@ async function boot(){
   if(us>=0){try{let b=sp.slice(us+1).replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';TITLE=b64d(b).trim().slice(0,60);}catch(e){TITLE='';}}
   const qa=(location.search.match(/[?&]a=([0-9a-f]{12})/)||[])[1]||'';
   if(qa){AID=qa;code='';}
+  const qk=(location.search.match(/[?&]k=([0-9a-f]{10})/)||[])[1]||'';
+  if(qk&&INIT){ ownTask(qk); return; }
   if(!INIT){
     $('#startTitle').textContent='Откройте тест в Telegram';
     $('#startLead').textContent='Этот тест работает только внутри Telegram. Откройте ссылку, которую прислал учитель, в приложении Telegram.';
@@ -354,14 +459,7 @@ async function submitWork(){
   let ok=false;
   try{
     const j=await post(AID?{act:'submit',init:INIT,aid:AID,a:A}:{act:'submit',init:INIT,t:CODE,a:A,title:TITLE});
-    if(j&&j.ok&&j.id){
-      let imgs=[];
-      try{imgs=await Promise.race([renderImages(j.marks||[]),new Promise(r=>setTimeout(()=>r([]),20000))]);}catch(e){imgs=[];}
-      let f=null;
-      try{f=await post({act:'finish',id:j.id,imgs:imgs});}catch(e){f=null;}
-      if(!(f&&f.ok)&&imgs.length){try{f=await post({act:'finish',id:j.id,imgs:[]});}catch(e){f=null;}}
-      ok=!!(f&&f.ok);
-    }
+    ok=!!(j&&j.ok);
   }catch(e){ok=false;}
   btn.disabled=false;btn.textContent='Сдать работу';
   if(ok){lsSet('sent-'+CODE+AID,'1');show('sent');}
