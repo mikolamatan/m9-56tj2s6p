@@ -91,6 +91,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .prog i{display:block;height:100%;background:var(--accent);width:0}
 .cnt{font-size:14px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
 .list{display:flex;flex-direction:column;gap:14px}
+/* полноэкранный режим Telegram: не залезать под кнопки «Закрыть» и «…» */
+html.tg-fs .top{padding-top:calc(28px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+html.tg-fs .bar{top:calc(var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+html.tg-fs main{padding-bottom:calc(56px + var(--tg-safe-area-inset-bottom,0px))}
 .code{font-family:var(--mono);font-size:13px;min-height:120px;overflow-wrap:anywhere}
 </style>
 
@@ -268,7 +272,13 @@ function showErr(m){const e=$('#startErr');e.textContent=m;e.hidden=!m;}
 function plural(n){return n%10===1&&n%100!==11?'задание':(n%10>=2&&n%10<=4&&(n%100<10||n%100>20)?'задания':'заданий');}
 async function boot(){
   show('start');
-  if(TGA){try{TGA.ready();TGA.expand();}catch(e){}}
+  if(TGA){try{
+    TGA.ready();TGA.expand();
+    if(TGA.isVersionAtLeast&&TGA.isVersionAtLeast('7.7')&&TGA.disableVerticalSwipes)TGA.disableVerticalSwipes();
+    if(TGA.isVersionAtLeast&&TGA.isVersionAtLeast('8.0')&&TGA.requestFullscreen&&!TGA.isFullscreen){
+      TGA.requestFullscreen();document.documentElement.classList.add('tg-fs');
+    }
+  }catch(e){}}
   const sp=String((TGA&&TGA.initDataUnsafe&&TGA.initDataUnsafe.start_param)||'').replace(/^t-/,'');
   const us=sp.indexOf('_'); let code=us<0?sp:sp.slice(0,us);
   if(us>=0){try{let b=sp.slice(us+1).replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';TITLE=b64d(b).trim().slice(0,60);}catch(e){TITLE='';}}
