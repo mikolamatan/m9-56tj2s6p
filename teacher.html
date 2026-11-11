@@ -873,6 +873,11 @@ function initOwn() {
   });
 }
 
+/* задания запоминаются в телефоне (IndexedDB), чтобы не скачивать 2 МБ каждый раз */
+function idbOpen() { return new Promise((res, rej) => { const r = indexedDB.open('m9-teacher', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbGet(k) { try { const db = await idbOpen(); return await new Promise(res => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch (e) { return null; } }
+async function idbSet(k, v) { try { const db = await idbOpen(); db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); } catch (e) {} }
+
 async function tboot() {
   showUI(false);
   if (TGA) {
@@ -884,8 +889,11 @@ async function tboot() {
   }
   if (!INIT && !TKEY) { bootMsg('Откройте конструктор из Telegram: кнопка «Конструктор» в чате с ботом.'); return; }
   bootMsg('Загружаю задания…');
-  let j = null; try { j = await tpost({ act: 'tload' }); } catch (e) { j = null; }
+  const cached = await idbGet('data');
+  let j = null; try { j = await tpost({ act: 'tload', have: cached && cached.ver }); } catch (e) { j = null; }
   if (!j || !j.ok) { bootMsg(j && j.err === 'auth' ? 'Конструктор доступен только учителю.' : 'Не удалось загрузить. Проверьте интернет и откройте ещё раз.'); return; }
+  if (j.same && cached) { j.bank = cached.bank; j.figs = cached.figs; }
+  else if (j.bank) idbSet('data', { ver: j.ver, bank: j.bank, figs: j.figs });
   BANK = j.bank; BANK.forEach((e, i) => { e.t = j.topics[i]; });
   FIGS = j.figs || {}; KEYS0 = j.keys; window.__KOV = j.kov || {};
   STUDENTS = j.students || []; ME = j.me;
