@@ -44,3 +44,13 @@ html.ui .seg button{border-radius:10px!important;background:transparent!importan
 html.ui .seg button[aria-pressed="true"]{background:var(--surface)!important;color:var(--ink)!important;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 html.ui .who{border:0!important;border-radius:14px!important}
 html.ui .score{border-radius:12px!important}
+
+/* отступы внутри задания: поле, кнопки, предпросмотр, фото не налезают друг на друга */
+html.ui .task{gap:14px!important}
+html.ui .task .ans{display:flex;flex-direction:column;gap:10px}
+html.ui .ins{gap:8px!important;flex-wrap:wrap}
+html.ui .ins button{min-height:42px!important}
+html.ui .hint{margin:0!important;line-height:1.45}
+html.ui .phrow{margin-top:2px}
+html.ui .q{line-height:1.65}
+html.ui .q math,html.ui .opts math{vertical-align:middle}
