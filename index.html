@@ -205,7 +205,7 @@ function inputHTML(i){
   return h;
 }
 let T=[],A=[],NAME='',CODE='';
-const draftKey=()=>'draft-'+CODE;
+const draftKey=()=>'draft-'+CODE+(typeof AID!=='undefined'&&AID?'-'+AID:'');
 function saveDraft(){lsSet(draftKey(),JSON.stringify({n:NAME,a:A}));}
 function loadDraft(){try{return JSON.parse(lsGet(draftKey())||'null');}catch(e){return null;}}
 const SUBMIT_URL='https://script.google.com/macros/s/AKfycbwSGrPHiBoqbpRn6U8U0BYakNPGsiOFNQw2SU7lk91fwJyETwQikLxbIaSJleu1i0CD/exec';
@@ -262,7 +262,7 @@ $('#list').addEventListener('click',ev=>{
 const BOT_LINK='https://t.me/math9_proverka_bot';
 const TGA=(window.Telegram&&window.Telegram.WebApp)||null;
 const INIT=TGA?TGA.initData:'';
-let TITLE='';
+let TITLE='',AID='';
 function startTest(){ saveDraft(); buildTest(); show('test'); }
 function showErr(m){const e=$('#startErr');e.textContent=m;e.hidden=!m;}
 function plural(n){return n%10===1&&n%100!==11?'задание':(n%10>=2&&n%10<=4&&(n%100<10||n%100>20)?'задания':'заданий');}
@@ -270,21 +270,23 @@ async function boot(){
   show('start');
   if(TGA){try{TGA.ready();TGA.expand();}catch(e){}}
   const sp=String((TGA&&TGA.initDataUnsafe&&TGA.initDataUnsafe.start_param)||'').replace(/^t-/,'');
-  const us=sp.indexOf('_'), code=us<0?sp:sp.slice(0,us);
+  const us=sp.indexOf('_'); let code=us<0?sp:sp.slice(0,us);
   if(us>=0){try{let b=sp.slice(us+1).replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';TITLE=b64d(b).trim().slice(0,60);}catch(e){TITLE='';}}
+  const qa=(location.search.match(/[?&]a=([0-9a-f]{12})/)||[])[1]||'';
+  if(qa){AID=qa;code='';}
   if(!INIT){
     $('#startTitle').textContent='Откройте тест в Telegram';
     $('#startLead').textContent='Этот тест работает только внутри Telegram. Откройте ссылку, которую прислал учитель, в приложении Telegram.';
     return;
   }
-  if(!code){
+  if(!code&&!AID){
     $('#startTitle').textContent='Нет теста';
     $('#startLead').textContent='Откройте тест по ссылке, которую прислал учитель.';
     return;
   }
   $('#startTitle').textContent='Загружаю задания…';$('#startLead').textContent='';
   let j=null;
-  try{j=await post({act:'load',init:INIT,t:code});}catch(e){j=null;}
+  try{j=await post(AID?{act:'load',init:INIT,aid:AID}:{act:'load',init:INIT,t:code});}catch(e){j=null;}
   if(!j||!j.ok){
     const err=j&&j.err;
     if(err==='noaccess'){
@@ -292,8 +294,11 @@ async function boot(){
       $('#startLead').textContent='Чтобы решать тесты, напишите боту /start и свою фамилию и имя. Когда учитель подтвердит доступ, откройте ссылку ещё раз.';
       $('#botRow').hidden=false;
     } else if(err==='code'){
-      $('#startTitle').textContent='Ссылка повреждена';
-      $('#startLead').textContent='Попросите учителя прислать ссылку ещё раз.';
+      $('#startTitle').textContent='Тест не найден';
+      $('#startLead').textContent='Попросите учителя прислать тест ещё раз.';
+    } else if(err==='notyours'){
+      $('#startTitle').textContent='Это не ваш тест';
+      $('#startLead').textContent='Этот тест учитель выдал другому ученику. Откройте тест из своего сообщения от бота.';
     } else {
       $('#startTitle').textContent='Не удалось загрузить';
       $('#startLead').textContent='Проверьте интернет и откройте ссылку ещё раз.';
@@ -301,11 +306,12 @@ async function boot(){
     return;
   }
   BANK=j.tasks;FIGS=j.figs||{};TYPES=j.tasks.map(t=>t.ty);
-  T=BANK.map((_,i)=>i);CODE=code;NAME=j.name;
+  T=BANK.map((_,i)=>i);CODE=j.t||code;NAME=j.name;
+  if(AID){TITLE=j.title||'';}
   const d=loadDraft();
   A=T.map((_,k)=>(d&&d.a&&d.a[k])||'');
   $('#startTitle').textContent=TITLE?'Тест по '+TITLE:'Проверочная работа';
-  $('#startLead').textContent='В работе '+T.length+' '+plural(T.length)+'.'+(lsGet('sent-'+CODE)?' Вы уже сдавали эту работу; если сдадите ещё раз, учитель это увидит.':'');
+  $('#startLead').textContent='В работе '+T.length+' '+plural(T.length)+'.'+((lsGet('sent-'+CODE+AID)||j.done)?' Вы уже сдавали эту работу; если сдадите ещё раз, учитель это увидит.':'');
   $('#startRow').hidden=false;$('#startNote').hidden=false;
 }
 $('#startBtn').addEventListener('click',startTest);
@@ -337,7 +343,7 @@ async function submitWork(){
   btn.disabled=true;btn.textContent='Отправляю…';
   let ok=false;
   try{
-    const j=await post({act:'submit',init:INIT,t:CODE,a:A,title:TITLE});
+    const j=await post(AID?{act:'submit',init:INIT,aid:AID,a:A}:{act:'submit',init:INIT,t:CODE,a:A,title:TITLE});
     if(j&&j.ok&&j.id){
       let imgs=[];
       try{imgs=await Promise.race([renderImages(j.marks||[]),new Promise(r=>setTimeout(()=>r([]),20000))]);}catch(e){imgs=[];}
@@ -348,7 +354,7 @@ async function submitWork(){
     }
   }catch(e){ok=false;}
   btn.disabled=false;btn.textContent='Сдать работу';
-  if(ok){lsSet('sent-'+CODE,'1');show('sent');}
+  if(ok){lsSet('sent-'+CODE+AID,'1');show('sent');}
   else showFallback();
 }
 /* Картинка работы для учителя: условия, ответы ученика, отметки. Ученику не показывается. */
