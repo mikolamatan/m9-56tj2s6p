@@ -2,6 +2,7 @@
 <title>Проверочная работа 9 класс</title>
 <meta name="robots" content="noindex,nofollow">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="ui.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: тетрадный лист — клетчатая шапка, ниже карточки заданий на спокойном фоне */
@@ -91,6 +92,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .prog i{display:block;height:100%;background:var(--accent);width:0}
 .cnt{font-size:14px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
 .list{display:flex;flex-direction:column;gap:14px}
+/* фото решения */
+.phrow{display:flex;flex-direction:column;gap:8px}
+.phbtn{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:500;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:7px 14px}
+.phs{display:flex;flex-wrap:wrap;gap:8px}
+.ph{position:relative}.ph img{width:84px;height:84px;object-fit:cover;border-radius:10px;display:block}
+.ph button{position:absolute;top:-6px;right:-6px;min-height:0;width:24px;height:24px;padding:0;border-radius:50%;background:var(--bad);color:#fff;border:0;font-size:16px;line-height:1}
 /* дробная черта: кнопка и предпросмотр ответа */
 .frb{display:inline-flex;flex-direction:column;align-items:center;line-height:1;font-size:13px}
 .frb span+span{border-top:1.5px solid currentColor;padding-top:1px;margin-top:1px;min-width:12px;text-align:center}
@@ -109,6 +116,7 @@ html.tg-fs main{padding-bottom:calc(56px + var(--tg-safe-area-inset-bottom,0px))
 .code{font-family:var(--mono);font-size:13px;min-height:120px;overflow-wrap:anywhere}
 </style>
 
+<link rel="stylesheet" href="ui.css">
 <header class="top"><div class="wrap">
   <p class="eyebrow">Математика · 9 класс</p>
   <h1>Проверочная работа</h1>
@@ -143,6 +151,7 @@ html.tg-fs main{padding-bottom:calc(56px + var(--tg-safe-area-inset-bottom,0px))
       <div class="ins" id="ownIns"></div>
       <div class="mpv" hidden></div>
     </div>
+    <div id="ownPh"></div>
     <p class="hint">Дробь — кнопкой с дробной чертой или через /, корень — √, степень — ^. Несколько ответов — через ;</p>
     <div id="ownErr" class="err" hidden></div>
     <div class="row"><button class="primary" id="ownBtn">Отправить ответ</button></div>
@@ -284,11 +293,11 @@ function updPreview(box,v){
   const need=/[\/^√]/.test(v||'');
   pv.hidden=!need;if(need)pv.innerHTML='<span class="mpl">Учитель увидит:</span> '+mathPreview(v);
 }
-let T=[],A=[],NAME='',CODE='';
+let T=[],A=[],NAME='',CODE='',PH=[];
 const draftKey=()=>'draft-'+CODE+(typeof AID!=='undefined'&&AID?'-'+AID:'');
 function saveDraft(){lsSet(draftKey(),JSON.stringify({n:NAME,a:A}));}
 function loadDraft(){try{return JSON.parse(lsGet(draftKey())||'null');}catch(e){return null;}}
-const SUBMIT_URL='https://script.google.com/macros/s/AKfycbwSGrPHiBoqbpRn6U8U0BYakNPGsiOFNQw2SU7lk91fwJyETwQikLxbIaSJleu1i0CD/exec';
+const SUBMIT_URL='https://math9-bot-relay.m9relayfbcd45.workers.dev/api';
 const FIN_TEXT='Проверьте ответы. После нажатия работа сразу уйдёт учителю.';
 function show(id){['start','test','done','sent','own'].forEach(s=>{$('#'+s).hidden=(s!==id);});window.scrollTo(0,0);}
 function progress(){
@@ -301,7 +310,7 @@ function buildTest(){
   $('#list').innerHTML=T.map((i,j)=>{
     const ty=TYPES[i];
     return '<article class="task" data-j="'+j+'"><div class="task-head"><span class="no">'+(j+1)+'</span></div>'+
-      taskBody(BANK[i])+'<div class="ans">'+inputHTML(i)+'</div><p class="hint">'+esc(HINTS[ty]||'')+'</p></article>';
+      taskBody(BANK[i])+'<div class="ans">'+inputHTML(i)+'</div><p class="hint">'+esc(HINTS[ty]||'')+'</p>'+phRow()+'</article>';
   }).join('');
   $$('.task').forEach((el,j)=>{
     const v=A[j]||'';
@@ -335,6 +344,22 @@ $('#list').addEventListener('click',ev=>{
     A[j]=on.join(''); saveDraft(); progress();
   }
 });
+/* ---------- фото решения ---------- */
+function phRow(){return '<div class="phrow"><label class="phbtn"><input type="file" accept="image/*" data-ph hidden>📷 Фото решения</label><div class="phs"></div></div>';}
+function shrink(file,max,q){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',q).split(',')[1]);};im.onerror=rej;im.src=u;});}
+async function phAdd(inp,j,box){
+  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
+  PH[j]=PH[j]||[];if(PH[j].length>=3){alert('Можно приложить до 3 фото к заданию.');return;}
+  try{PH[j].push(await shrink(f,1280,0.72));}catch(e){alert('Не получилось прочитать фото.');return;}
+  phDraw(box,j);
+}
+function phDraw(box,j){
+  const w=box.querySelector('.phs');if(!w)return;
+  w.innerHTML=(PH[j]||[]).map((b,k)=>'<span class="ph"><img alt="Фото решения" src="data:image/jpeg;base64,'+b+'"><button type="button" data-phdel="'+k+'" aria-label="Убрать фото">×</button></span>').join('');
+}
+$('#list').addEventListener('change',ev=>{const t=ev.target;if(t.matches('[data-ph]')){const el=t.closest('.task');phAdd(t,+el.dataset.j,el);}});
+$('#list').addEventListener('click',ev=>{const d=ev.target.closest('[data-phdel]');if(d){ev.stopPropagation();const el=d.closest('.task'),j=+el.dataset.j;PH[j].splice(+d.dataset.phdel,1);phDraw(el,j);}},true);
+
 /* ---------- запуск внутри Telegram ---------- */
 const BOT_LINK='https://t.me/math9_proverka_bot';
 const TGA=(window.Telegram&&window.Telegram.WebApp)||null;
@@ -364,13 +389,16 @@ async function ownTask(k){
   inp.addEventListener('input',()=>updPreview(box,inp.value));
   $('#ownBtn').addEventListener('click',async()=>{
     const a=inp.value.trim(),er=$('#ownErr');
-    if(!a){er.textContent='Введите ответ.';er.hidden=false;return;}
+    if(!a&&!(PH[0]||[]).length){er.textContent='Введите ответ или приложите фото решения.';er.hidden=false;return;}
     er.hidden=true;$('#ownBtn').disabled=true;$('#ownBtn').textContent='Отправляю…';
-    let r=null;try{r=await post({act:'ksubmit',init:INIT,k,a});}catch(e){r=null;}
+    let r=null;try{r=await post({act:'ksubmit',init:INIT,k,a,ph:(PH[0]||[]).map(b64=>({b64}))});}catch(e){r=null;}
     $('#ownBtn').disabled=false;$('#ownBtn').textContent='Отправить ответ';
     if(r&&r.ok){show('sent');}
     else{er.textContent=r&&r.err==='already'?'Вы уже ответили на это задание.':'Не получилось отправить. Проверьте интернет и нажмите ещё раз.';er.hidden=false;}
   });
+  $('#ownPh').innerHTML=phRow();PH=[[]];
+  box.addEventListener('change',ev=>{if(ev.target.matches('[data-ph]'))phAdd(ev.target,0,box);});
+  box.addEventListener('click',ev=>{const d=ev.target.closest('[data-phdel]');if(d){PH[0].splice(+d.dataset.phdel,1);phDraw(box,0);}});
   show('own');
 }
 async function boot(){
@@ -458,7 +486,8 @@ async function submitWork(){
   btn.disabled=true;btn.textContent='Отправляю…';
   let ok=false;
   try{
-    const j=await post(AID?{act:'submit',init:INIT,aid:AID,a:A}:{act:'submit',init:INIT,t:CODE,a:A,title:TITLE});
+    const ph=[];PH.forEach((l,j)=>(l||[]).forEach(b64=>ph.push({j,b64})));
+    const j=await post(AID?{act:'submit',init:INIT,aid:AID,a:A,ph}:{act:'submit',init:INIT,t:CODE,a:A,title:TITLE,ph});
     ok=!!(j&&j.ok);
   }catch(e){ok=false;}
   btn.disabled=false;btn.textContent='Сдать работу';
