@@ -788,10 +788,11 @@ var BANK = [], FIGS = {}, KEYS0 = {};
 const T_API = "https://script.google.com/macros/s/AKfycbwSGrPHiBoqbpRn6U8U0BYakNPGsiOFNQw2SU7lk91fwJyETwQikLxbIaSJleu1i0CD/exec";
 const TGA = (window.Telegram && window.Telegram.WebApp) || null;
 const INIT = TGA ? TGA.initData : '';
+const TKEY = (location.search.match(/[?&]key=([0-9a-f]{32})/) || [])[1] || '';
 let STUDENTS = [], ME = '', OWN_PHOTO = '';
 
 async function tpost(o) {
-  const r = await fetch(T_API, { method: 'POST', body: JSON.stringify(Object.assign({ init: INIT }, o)) });
+  const r = await fetch(T_API, { method: 'POST', body: JSON.stringify(Object.assign({ init: INIT, key: TKEY }, o)) });
   return await r.json();
 }
 function q(s) { return document.querySelector(s); }
@@ -881,7 +882,7 @@ async function tboot() {
       if (TGA.isVersionAtLeast && TGA.isVersionAtLeast('8.0') && TGA.requestFullscreen && !TGA.isFullscreen) { TGA.requestFullscreen(); document.documentElement.classList.add('tg-fs'); }
     } catch (e) {}
   }
-  if (!INIT) { bootMsg('Откройте конструктор из Telegram: кнопка «Конструктор» в чате с ботом.'); return; }
+  if (!INIT && !TKEY) { bootMsg('Откройте конструктор из Telegram: кнопка «Конструктор» в чате с ботом.'); return; }
   bootMsg('Загружаю задания…');
   let j = null; try { j = await tpost({ act: 'tload' }); } catch (e) { j = null; }
   if (!j || !j.ok) { bootMsg(j && j.err === 'auth' ? 'Конструктор доступен только учителю.' : 'Не удалось загрузить. Проверьте интернет и откройте ещё раз.'); return; }
